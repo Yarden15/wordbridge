@@ -1,4 +1,4 @@
-# Milon — Architecture
+# Wordbridge — Architecture
 
 ## Goals
 
@@ -55,7 +55,7 @@ Every request goes to the cheapest engine that can answer it:
 
 Models are **not** bundled in the installer (keeps the download small and lets users choose).
 On first launch an onboarding screen downloads the default models into
-`~/Library/Application Support/Milon/Models`, with size shown up front and checksum verification.
+`~/Library/Application Support/Wordbridge/Models`, with size shown up front and checksum verification.
 Models must have a license that allows free redistribution and use.
 
 Candidates to evaluate (pick by Hebrew quality vs. size at implementation time):

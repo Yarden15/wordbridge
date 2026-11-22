@@ -1,6 +1,6 @@
-# Milon
+# Wordbridge
 
-**Milon** (מילון, Hebrew for "dictionary") is a free, open-source macOS menu-bar app
+**Wordbridge** is a free, open-source macOS menu-bar app
 that helps you write and understand English while you work — in any app.
 
 Everything runs **on your Mac**. No account, no subscription, no text sent to a server.
@@ -27,7 +27,7 @@ Languages: Hebrew ⇄ English first. More languages later.
 
 - All processing is local, using small open models downloaded on first launch.
 - Password fields are never read.
-- You can exclude any app from Milon.
+- You can exclude any app from Wordbridge.
 
 ## How it stays light
 
