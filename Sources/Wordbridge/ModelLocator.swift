@@ -37,6 +37,45 @@ enum ModelLocator {
         return nil
     }
 
+    /// Every model file Wordbridge can see: recommended ones first, then the rest by name.
+    /// Includes a model picked with "Choose Model File…" even if it lives elsewhere.
+    static var availableModels: [URL] {
+        let fm = FileManager.default
+        var found: [URL] = []
+        for dir in modelSearchFolders {
+            let files = (try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
+            found += files.filter {
+                let name = $0.lastPathComponent
+                return $0.pathExtension.lowercased() == "gguf"
+                    && !name.hasPrefix("._")            // exFAT metadata files
+                    && !name.lowercased().contains("mmproj") // vision add-ons, not models
+            }
+        }
+        if let path = UserDefaults.standard.string(forKey: modelPathKey), fm.fileExists(atPath: path) {
+            found.append(URL(filePath: path))
+        }
+        var seen = Set<String>()
+        found = found.filter { seen.insert($0.standardizedFileURL.path).inserted }
+
+        func rank(_ url: URL) -> Int { preferredModels.firstIndex(of: url.lastPathComponent) ?? preferredModels.count }
+        return found.sorted {
+            rank($0) != rank($1) ? rank($0) < rank($1) : $0.lastPathComponent < $1.lastPathComponent
+        }
+    }
+
+    /// Short guidance shown under a model in the menu.
+    static func note(for model: URL) -> String? {
+        switch model.lastPathComponent {
+        case "gemma-4-E4B-it-Q4_K_M.gguf": "Best quality · uses ~5.5 GB of memory"
+        case "gemma-4-E2B-it-Q4_K_M.gguf": "Lighter and faster · uses ~3.5 GB of memory"
+        default: nil
+        }
+    }
+
+    static func select(_ model: URL) {
+        UserDefaults.standard.set(model.path, forKey: modelPathKey)
+    }
+
     static var modelSearchFolders: [URL] {
         var folders = [appSupportFolder.appending(path: "models", directoryHint: .isDirectory)]
         let volumes = (try? FileManager.default.contentsOfDirectory(

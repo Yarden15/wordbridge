@@ -24,6 +24,7 @@ final class LLMEngine: ObservableObject {
         case serverExited
         case loadTimedOut
         case badResponse(String)
+        case interrupted
 
         var errorDescription: String? {
             switch self {
@@ -36,6 +37,7 @@ final class LLMEngine: ObservableObject {
             case .serverExited: "The language model stopped unexpectedly."
             case .loadTimedOut: "Loading the language model took too long."
             case .badResponse(let detail): "Unexpected response from the language model: \(detail)"
+            case .interrupted: "The language model was stopped before it finished. Try again."
             }
         }
     }
@@ -46,9 +48,13 @@ final class LLMEngine: ObservableObject {
     private var port = 0
     private var loadTask: Task<Void, Error>?
     private var idleTimer: Timer?
+    private var activeRequests = 0
     private var memoryPressureSource: DispatchSourceMemoryPressure?
     private static let pidKey = "llamaServerPID"
-    private static let lastLoadSecondsKey = "lastModelLoadSeconds"
+    /// Load time is remembered per model file, since models differ a lot in size.
+    private static func lastLoadSecondsKey(for model: URL?) -> String {
+        "lastModelLoadSeconds." + (model?.lastPathComponent ?? "")
+    }
 
     private init() {
         killStaleServer()
@@ -62,7 +68,7 @@ final class LLMEngine: ObservableObject {
 
     /// How long the last load took; used to show approximate progress.
     var expectedLoadSeconds: Double {
-        let last = UserDefaults.standard.double(forKey: Self.lastLoadSecondsKey)
+        let last = UserDefaults.standard.double(forKey: Self.lastLoadSecondsKey(for: ModelLocator.modelURL))
         return last > 0 ? last : 60
     }
 
@@ -72,7 +78,14 @@ final class LLMEngine: ObservableObject {
     }
 
     func complete(system: String, user: String, maxTokens: Int = 400) async throws -> String {
-        try await ensureLoaded()
+        activeRequests += 1
+        defer { activeRequests -= 1 }
+        do {
+            try await ensureLoaded()
+        } catch is CancellationError where !Task.isCancelled {
+            // The load was stopped by someone else (unload, drive unplugged), not by this caller.
+            throw EngineError.interrupted
+        }
         resetIdleTimer()
         defer { resetIdleTimer() }
 
@@ -175,7 +188,7 @@ final class LLMEngine: ObservableObject {
             try await Task.sleep(for: .milliseconds(500))
         }
 
-        UserDefaults.standard.set(Date().timeIntervalSince(started), forKey: Self.lastLoadSecondsKey)
+        UserDefaults.standard.set(Date().timeIntervalSince(started), forKey: Self.lastLoadSecondsKey(for: model))
         state = .ready
         resetIdleTimer()
     }
@@ -210,9 +223,15 @@ final class LLMEngine: ObservableObject {
     }
 
     private func observeMemoryPressure() {
-        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        // Only on *critical* pressure, and never in the middle of a load or a request:
+        // loading a multi-GB model triggers a "warning" by itself.
+        let source = DispatchSource.makeMemoryPressureSource(eventMask: [.critical], queue: .main)
         source.setEventHandler {
-            MainActor.assumeIsolated { LLMEngine.shared.unload() }
+            MainActor.assumeIsolated {
+                let engine = LLMEngine.shared
+                guard engine.loadTask == nil, engine.activeRequests == 0 else { return }
+                engine.unload()
+            }
         }
         source.resume()
         memoryPressureSource = source
@@ -233,21 +252,30 @@ final class LLMEngine: ObservableObject {
         }
     }
 
-    /// If the app crashed last time, its llama-server may still be running. Stop it.
+    /// If the app crashed last time, its llama-server may still be running. Stop it —
+    /// but only if it's orphaned (parent gone), so we never kill a server that another
+    /// running Wordbridge instance owns.
     private func killStaleServer() {
         let pid = UserDefaults.standard.integer(forKey: Self.pidKey)
         guard pid > 0 else { return }
-        UserDefaults.standard.removeObject(forKey: Self.pidKey)
 
         let ps = Process()
         ps.executableURL = URL(filePath: "/bin/ps")
-        ps.arguments = ["-p", String(pid), "-o", "comm="]
+        ps.arguments = ["-p", String(pid), "-o", "ppid=,comm="]
         let pipe = Pipe()
         ps.standardOutput = pipe
         try? ps.run()
         ps.waitUntilExit()
-        let command = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        if command.contains("llama-server") { kill(pid_t(pid), SIGTERM) }
+        let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !output.isEmpty else {
+            UserDefaults.standard.removeObject(forKey: Self.pidKey) // already gone
+            return
+        }
+        let parent = Int(output.split(separator: " ").first ?? "") ?? 0
+        guard output.contains("llama-server"), parent == 1 else { return }
+        UserDefaults.standard.removeObject(forKey: Self.pidKey)
+        kill(pid_t(pid), SIGTERM)
     }
 
     // MARK: - Helpers

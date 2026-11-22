@@ -8,7 +8,11 @@ enum Translator {
         let system = "You are a professional translator. Translate the user's text from \(source.englishName) "
             + "to \(target.englishName). Keep the meaning, tone and formatting. "
             + "Output only the translation, nothing else."
-        return try await LLMEngine.shared.complete(system: system, user: text, maxTokens: max(200, text.count * 3))
+        let maxTokens = max(200, text.count * 3)
+        switch await Backend.current {
+        case .local: return try await LLMEngine.shared.complete(system: system, user: text, maxTokens: maxTokens)
+        case .gemini: return try await GeminiEngine.complete(system: system, user: text, maxTokens: maxTokens)
+        }
     }
 }
 
@@ -49,7 +53,8 @@ final class TranslationModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 result = translation
             } catch {
-                guard !Task.isCancelled, !(error is CancellationError) else { return }
+                guard !Task.isCancelled else { return } // the panel was closed
+
                 errorMessage = error.localizedDescription
             }
         }
