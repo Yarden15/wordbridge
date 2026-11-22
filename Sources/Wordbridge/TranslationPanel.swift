@@ -124,6 +124,7 @@ private final class FloatingPanel: NSPanel {
 @MainActor
 final class TranslationPanelController: NSObject, NSWindowDelegate {
     private var panel: FloatingPanel?
+    private var outsideClickMonitor: Any?
 
     func show(text: String, near point: NSPoint) {
         panel?.close()
@@ -157,6 +158,7 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
         panel.setFrameOrigin(origin(for: panel.frame.size, near: point))
         panel.makeKeyAndOrderFront(nil)
         self.panel = panel
+        startOutsideClickMonitor(for: model)
     }
 
     /// Places the panel just below-right of the cursor, kept fully on screen.
@@ -170,11 +172,26 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
         return origin
     }
 
-    func windowDidResignKey(_ notification: Notification) {
-        panel?.close()
+    /// Closes the panel when the user clicks in another app — but only once the translation is done.
+    /// While it's still loading, macOS may show its own language-download prompt, and clicking
+    /// that must not close us. (We don't close on resign-key for the same reason.)
+    private func startOutsideClickMonitor(for model: TranslationModel) {
+        stopOutsideClickMonitor()
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self, weak model] _ in
+            MainActor.assumeIsolated {
+                guard let model, model.result != nil || model.errorMessage != nil else { return }
+                self?.panel?.close()
+            }
+        }
+    }
+
+    private func stopOutsideClickMonitor() {
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor) }
+        outsideClickMonitor = nil
     }
 
     func windowWillClose(_ notification: Notification) {
+        stopOutsideClickMonitor()
         panel = nil
     }
 }
