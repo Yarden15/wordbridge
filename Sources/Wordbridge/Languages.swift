@@ -36,3 +36,7 @@ enum AppLanguage: String, CaseIterable {
         return hebrew > latin ? (.hebrew, .english) : (.english, .hebrew)
     }
 }
+
+extension String {
+    var containsHebrew: Bool { unicodeScalars.contains { (0x0590...0x05FF).contains($0.value) } }
+}

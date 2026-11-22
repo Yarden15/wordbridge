@@ -7,7 +7,8 @@ import UniformTypeIdentifiers
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var translateHotKey: HotKey?
-    private let translationPanel = TranslationPanelController()
+    private var improveHotKey: HotKey?
+    private let assistantPanel = AssistantPanelController()
 
     private let accessibilityItem = NSMenuItem()
     private let launchAtLoginItem = NSMenuItem()
@@ -24,14 +25,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ) { [weak self] in
             self?.translateSelection()
         }
+        // ⌘⇧⌥F — check and fix ("improve") the text you selected.
+        improveHotKey = HotKey(
+            id: 2, keyCode: kVK_ANSI_F, modifiers: cmdKey | shiftKey | optionKey
+        ) { [weak self] in
+            self?.improveSelection()
+        }
 
         Accessibility.requestIfNeeded()
 
-        // Developer aid: `open Wordbridge.app --args --show "some text"` opens the panel directly.
+        // Developer aid: `open Wordbridge.app --args --show "text"` (or `--improve "text"`) opens the panel directly.
         let args = CommandLine.arguments
-        if let flag = args.firstIndex(of: "--show"), flag + 1 < args.count, let screen = NSScreen.main {
-            let center = NSPoint(x: screen.visibleFrame.midX - 200, y: screen.visibleFrame.midY + 150)
-            translationPanel.show(text: args[flag + 1], near: center)
+        for (flag, mode) in [("--show", AssistantMode.translate), ("--improve", .improve)] {
+            if let index = args.firstIndex(of: flag), index + 1 < args.count, let screen = NSScreen.main {
+                let center = NSPoint(x: screen.visibleFrame.midX - 230, y: screen.visibleFrame.midY + 200)
+                assistantPanel.show(text: args[index + 1], mode: mode, near: center, sourceApp: nil)
+            }
         }
     }
 
@@ -51,6 +60,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         translate.keyEquivalentModifierMask = [.command, .shift, .option]
         translate.target = self
         menu.addItem(translate)
+
+        let improve = NSMenuItem(title: "Improve Writing", action: #selector(improveSelection), keyEquivalent: "f")
+        improve.keyEquivalentModifierMask = [.command, .shift, .option]
+        improve.target = self
+        menu.addItem(improve)
 
         menu.addItem(.separator())
 
@@ -221,7 +235,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - Actions
 
     @objc private func translateSelection() {
+        showAssistant(.translate)
+    }
+
+    @objc private func improveSelection() {
+        showAssistant(.improve)
+    }
+
+    private func showAssistant(_ mode: AssistantMode) {
         let mouse = NSEvent.mouseLocation
+        let sourceApp = NSWorkspace.shared.frontmostApplication
         Task { @MainActor in
             guard let text = await SelectionReader.selectedText(), !text.isBlank else {
                 if Accessibility.isTrusted {
@@ -231,7 +254,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 }
                 return
             }
-            translationPanel.show(text: text.trimmingCharacters(in: .whitespacesAndNewlines), near: mouse)
+            assistantPanel.show(
+                text: text.trimmingCharacters(in: .whitespacesAndNewlines),
+                mode: mode, near: mouse, sourceApp: sourceApp
+            )
         }
     }
 

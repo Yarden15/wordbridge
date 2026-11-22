@@ -51,6 +51,33 @@ enum SelectionReader {
         return text
     }
 
+    // MARK: - Replacing the selection
+
+    /// Types `text` over the current selection in `app` by pasting it, then restores the clipboard.
+    /// Pasting works in every kind of text field (native, web, Electron), unlike setting the
+    /// selection through Accessibility, which many apps silently ignore.
+    @MainActor
+    static func replaceSelection(with text: String, in app: NSRunningApplication?) async -> Bool {
+        guard Accessibility.isTrusted else { return false }
+        let pasteboard = NSPasteboard.general
+        let saved = snapshot(pasteboard)
+
+        if let app, !app.isActive {
+            app.activate()
+            try? await Task.sleep(for: .milliseconds(150))
+        }
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+
+        await waitForModifiersReleased()
+        postCommand(key: kVK_ANSI_V)
+
+        // Give the app time to read the clipboard before putting the old contents back.
+        try? await Task.sleep(for: .milliseconds(400))
+        restore(saved, to: pasteboard)
+        return true
+    }
+
     private static func waitForModifiersReleased() async {
         let held: CGEventFlags = [.maskCommand, .maskShift, .maskAlternate, .maskControl]
         for _ in 0..<50 {
@@ -61,10 +88,13 @@ enum SelectionReader {
     }
 
     private static func postCommandC() {
+        postCommand(key: kVK_ANSI_C)
+    }
+
+    private static func postCommand(key: Int) {
         let source = CGEventSource(stateID: .combinedSessionState)
-        let keyC = CGKeyCode(kVK_ANSI_C)
-        let down = CGEvent(keyboardEventSource: source, virtualKey: keyC, keyDown: true)
-        let up = CGEvent(keyboardEventSource: source, virtualKey: keyC, keyDown: false)
+        let down = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(key), keyDown: true)
+        let up = CGEvent(keyboardEventSource: source, virtualKey: CGKeyCode(key), keyDown: false)
         down?.flags = .maskCommand
         up?.flags = .maskCommand
         down?.post(tap: .cghidEventTap)
