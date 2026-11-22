@@ -6,6 +6,8 @@ import UniformTypeIdentifiers
 extension Notification.Name {
     /// Meeting settings changed in the Settings window; an open meeting window picks them up.
     static let meetingSettingsChanged = Notification.Name("io.github.wordbridge.meetingSettingsChanged")
+    /// "Check my writing as I type" was turned on or off.
+    static let typingSettingsChanged = Notification.Name("io.github.wordbridge.typingSettingsChanged")
 }
 
 /// Everything the Settings window shows and changes. Values live in UserDefaults / the Keychain,
@@ -16,6 +18,9 @@ final class SettingsModel: ObservableObject {
     @Published var launchAtLogin = SMAppService.mainApp.status == .enabled
     @Published var accessibilityGranted = Accessibility.isTrusted
     @Published var launchError: String?
+    @Published var checkWhileTyping = TypingAssistant.isEnabled
+    @Published var practiceReminder = PracticeReminder.isEnabled
+    @Published var practiceHour = PracticeReminder.hour
 
     // Model
     @Published var backend = Backend.current
@@ -34,6 +39,9 @@ final class SettingsModel: ObservableObject {
     func refresh() {
         launchAtLogin = SMAppService.mainApp.status == .enabled
         accessibilityGranted = Accessibility.isTrusted
+        checkWhileTyping = TypingAssistant.isEnabled
+        practiceReminder = PracticeReminder.isEnabled
+        practiceHour = PracticeReminder.hour
         backend = Backend.current
         models = ModelLocator.availableModels
         localModel = ModelLocator.modelURL?.standardizedFileURL
@@ -53,6 +61,22 @@ final class SettingsModel: ObservableObject {
             launchError = error.localizedDescription
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+
+    func setCheckWhileTyping(_ on: Bool) {
+        TypingAssistant.isEnabled = on
+        checkWhileTyping = on
+        NotificationCenter.default.post(name: .typingSettingsChanged, object: nil)
+    }
+
+    func setPracticeReminder(_ on: Bool) {
+        PracticeReminder.isEnabled = on
+        practiceReminder = on
+    }
+
+    func setPracticeHour(_ hour: Int) {
+        PracticeReminder.hour = hour
+        practiceHour = hour
     }
 
     // MARK: Model
@@ -131,7 +155,7 @@ struct SettingsView: View {
             modelTab.tabItem { Label("Model", systemImage: "cpu") }
             meetings.tabItem { Label("Meetings", systemImage: "person.2.wave.2") }
         }
-        .frame(width: 520, height: 430)
+        .frame(width: 540, height: 520)
     }
 
     // MARK: General
@@ -154,10 +178,28 @@ struct SettingsView: View {
                 Text("Accessibility lets Wordbridge read the text you select, paste suggestions back and read meeting captions.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Section {
+                Toggle("Check my writing as I type", isOn: Binding(get: { model.checkWhileTyping }, set: { model.setCheckWhileTyping($0) }))
+            } header: {
+                Text("Writing")
+            } footer: {
+                Text("When you pause after an English sentence in any app, Wordbridge checks it and shows a small badge if something should be fixed. Never in password fields, terminals or code editors. With Gemini, the sentences you type are sent to Google.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section("Practice") {
+                Toggle("Daily reminder to practice my words", isOn: Binding(get: { model.practiceReminder }, set: { model.setPracticeReminder($0) }))
+                if model.practiceReminder {
+                    Picker("At", selection: Binding(get: { model.practiceHour }, set: { model.setPracticeHour($0) })) {
+                        ForEach(7..<23, id: \.self) { Text(String(format: "%02d:00", $0)).tag($0) }
+                    }
+                }
+            }
             Section("Shortcuts") {
                 LabeledContent("Translate selection", value: "⌘⇧⌥T")
                 LabeledContent("Improve writing", value: "⌘⇧⌥F")
                 LabeledContent("Translate meeting", value: "⌘⇧⌥M")
+                LabeledContent("How do I say…", value: "⌘⇧⌥E")
             }
         }
         .formStyle(.grouped)

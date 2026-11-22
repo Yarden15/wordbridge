@@ -16,10 +16,34 @@ enum AssistantMode: String, CaseIterable {
     }
 }
 
+/// Word-by-word meanings for any text shown on screen, fetched once per text.
+/// Shared by the selection panel and the meeting window.
+@MainActor
+class GlossStore: ObservableObject {
+    @Published var wordByWord = false
+    @Published private(set) var glosses: [String: [Int: WordGloss]] = [:]
+    @Published private(set) var glossErrors: [String: String] = [:]
+    @Published private(set) var glossLoading: Set<String> = []
+
+    func loadGloss(for text: String) {
+        guard glosses[text] == nil, !glossLoading.contains(text) else { return }
+        glossLoading.insert(text)
+        glossErrors[text] = nil
+        Task {
+            do {
+                glosses[text] = try await Glossary.gloss(text)
+            } catch {
+                glossErrors[text] = error.localizedDescription
+            }
+            glossLoading.remove(text)
+        }
+    }
+}
+
 /// Everything the panel shows for one piece of selected text: its translation, suggestions
 /// for improving it, and word-by-word meanings. Each is fetched only when it's first shown.
 @MainActor
-final class AssistantModel: ObservableObject {
+final class AssistantModel: GlossStore {
     let text: String
     @Published var mode: AssistantMode {
         didSet { if mode != oldValue { startIfNeeded() } }
@@ -37,16 +61,14 @@ final class AssistantModel: ObservableObject {
     @Published private(set) var checkError: String?
     private var checkTask: Task<Void, Never>?
 
-    // Word by word
-    @Published var wordByWord = false
-    @Published private(set) var glosses: [String: [Int: WordGloss]] = [:]
-    @Published private(set) var glossErrors: [String: String] = [:]
-    @Published private(set) var glossLoading: Set<String> = []
-
-    init(text: String, mode: AssistantMode) {
+    /// - Parameter check: a writing check already made (e.g. by fix-as-you-type), so it isn't asked again.
+    init(text: String, mode: AssistantMode, check: WritingCheck? = nil) {
         self.text = text
         self.mode = mode
+        self.check = check
         (source, target) = AppLanguage.direction(for: text)
+        super.init()
+        if check != nil { checkTask = Task {} }
         startIfNeeded()
     }
 
@@ -109,20 +131,6 @@ final class AssistantModel: ObservableObject {
                 guard !Task.isCancelled else { return }
                 checkError = error.localizedDescription
             }
-        }
-    }
-
-    func loadGloss(for text: String) {
-        guard glosses[text] == nil, !glossLoading.contains(text) else { return }
-        glossLoading.insert(text)
-        glossErrors[text] = nil
-        Task {
-            do {
-                glosses[text] = try await Glossary.gloss(text)
-            } catch {
-                glossErrors[text] = error.localizedDescription
-            }
-            glossLoading.remove(text)
         }
     }
 
@@ -242,6 +250,14 @@ struct AssistantView: View {
                 SectionLabel(title: model.target.displayName)
                 Spacer()
                 if let translation = model.translation {
+                    if WordTokens.split(model.text).filter(\.isWord).count <= 6 {
+                        // Short selections are worth keeping for practice: English term, Hebrew meaning.
+                        let englishFirst = model.source == .english
+                        SaveWordButton(
+                            term: englishFirst ? model.text : translation,
+                            meaning: englishFirst ? translation : model.text,
+                            context: nil)
+                    }
                     SmallIconButton(systemImage: "doc.on.doc", help: "Copy the translation") {
                         AssistantModel.copy(translation)
                     }
@@ -310,12 +326,12 @@ struct AssistantView: View {
 
 /// View-local on/off state. (Used instead of @State, whose macro isn't available
 /// when building with Command Line Tools only.)
-private final class Flag: ObservableObject {
+final class Flag: ObservableObject {
     @Published var value = false
 }
 
 /// A small all-caps caption that names a section.
-private struct SectionLabel: View {
+struct SectionLabel: View {
     let title: String
     var systemImage: String?
 
@@ -330,7 +346,7 @@ private struct SectionLabel: View {
 }
 
 /// An on/off switch drawn as a small capsule, tinted when on.
-private struct PillToggle: View {
+struct PillToggle: View {
     let title: String
     let systemImage: String
     @Binding var isOn: Bool
@@ -351,7 +367,7 @@ private struct PillToggle: View {
     }
 }
 
-private struct SmallIconButton: View {
+struct SmallIconButton: View {
     let systemImage: String
     let help: String
     let action: () -> Void
@@ -458,12 +474,12 @@ private struct SuggestionCard: View {
 
 /// Shows text as a paragraph, or as hoverable words when "word by word" is on.
 /// Words that differ from the user's original (in suggestions) are highlighted.
-private struct TextBlock: View {
+struct TextBlock: View {
     let text: String
     let language: AppLanguage
     var tokens: [WordToken]?
     var secondary = false
-    @ObservedObject var model: AssistantModel
+    @ObservedObject var model: GlossStore
     let focus: WordFocus
 
     private var font: Font { secondary ? .body : .title3 }
@@ -514,12 +530,12 @@ private struct TextBlock: View {
     }
 }
 
-private struct WordChip: View {
+struct WordChip: View {
     let token: WordToken
     let textKey: String
     let font: Font
     let secondary: Bool
-    @ObservedObject var model: AssistantModel
+    @ObservedObject var model: GlossStore
     @ObservedObject var focus: WordFocus
 
     var body: some View {
@@ -583,7 +599,7 @@ private struct WordChip: View {
     }
 }
 
-private struct Line: Shape {
+struct Line: Shape {
     func path(in rect: CGRect) -> Path {
         Path { path in
             path.move(to: CGPoint(x: rect.minX, y: rect.midY))
@@ -593,8 +609,8 @@ private struct Line: Shape {
 }
 
 /// Shows the meaning of the word under the mouse.
-private struct WordInfoBar: View {
-    @ObservedObject var model: AssistantModel
+struct WordInfoBar: View {
+    @ObservedObject var model: GlossStore
     @ObservedObject var focus: WordFocus
 
     var body: some View {
@@ -618,6 +634,8 @@ private struct WordInfoBar: View {
                         Text(gloss.meaning)
                             .font(.headline)
                             .foregroundStyle(Color.accentColor)
+                        Spacer(minLength: 8)
+                        SaveWordButton(term: target.token.bare, meaning: gloss.meaning, context: target.text, label: "Save")
                     }
                     if let phrase = gloss.phrase, let phraseMeaning = gloss.phraseMeaning {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -625,6 +643,8 @@ private struct WordInfoBar: View {
                             Text(phrase).italic()
                             Text("·")
                             Text(phraseMeaning)
+                            Spacer(minLength: 8)
+                            SaveWordButton(term: phrase, meaning: phraseMeaning, context: target.text, label: "Save phrase")
                         }
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -682,7 +702,7 @@ struct DirectionalText: View {
 
 // MARK: - Status views
 
-private struct ErrorView: View {
+struct ErrorView: View {
     let message: String
     let retry: () -> Void
 
@@ -701,7 +721,7 @@ private struct ErrorView: View {
 
 /// Placeholder lines while waiting — or, while the local model loads (minutes from a slow drive),
 /// real progress.
-private struct WaitingView: View {
+struct WaitingView: View {
     let label: String
     @ObservedObject private var engine = LLMEngine.shared
     @StateObject private var pulse = Flag()
@@ -766,10 +786,11 @@ final class AssistantPanelController: NSObject, NSWindowDelegate {
     private static let defaultWidth: CGFloat = 460
 
     /// - Parameter sourceApp: the app the text was selected in, so "Replace" can paste back into it.
-    func show(text: String, mode: AssistantMode, near point: NSPoint, sourceApp: NSRunningApplication?) {
+    func show(text: String, mode: AssistantMode, near point: NSPoint, sourceApp: NSRunningApplication?,
+              check: WritingCheck? = nil) {
         panel?.close()
 
-        let model = AssistantModel(text: text, mode: mode)
+        let model = AssistantModel(text: text, mode: mode, check: check)
         let focus = WordFocus()
         self.model = model
         self.focus = focus

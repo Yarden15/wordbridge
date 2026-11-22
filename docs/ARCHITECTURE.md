@@ -16,8 +16,10 @@
 | Replacing the selection | Built | Paste (`⌘V`) into the original app, clipboard restored afterwards |
 | Assistant window | Built | Non-activating, resizable `NSPanel` hosting SwiftUI; Translate / Improve tabs; word by word |
 | Translation, writing check, word meanings | Built | One LLM, through a local `llama-server` or Google Gemini |
-| Fix as you type | Planned | `NSSpellChecker` (instant) + LLM on pause, underline overlays |
-| Learning / review | Planned | SQLite of looked-up words, spaced repetition |
+| Fix as you type | Built | Polls the focused text field via Accessibility, checks the sentence on pause, badge overlay |
+| My Words / practice | Built | JSON word book, Leitner spaced repetition, daily `UserNotifications` reminder |
+| How do I say… | Built | One prompt, two phrasings (spoken / professional) with Hebrew notes |
+| Meeting summary | Built | Whole transcript → JSON summary, decisions, action items |
 | Meeting translation | Built | Captions via Accessibility (Meet, Zoom transcript), or a Core Audio process tap + `SpeechTranscriber` |
 | Settings window | Built | SwiftUI `TabView` + grouped `Form`: General, Model, Meetings |
 
@@ -39,6 +41,9 @@
 | `MeetingCaptions.swift` | Finding the meeting (`MeetingApp`), reading Meet/Zoom captions (`CaptionReader`), `AXTree` helpers |
 | `MeetingAudio.swift` | `MeetingListener`: process tap on the meeting app's audio → `SpeechAnalyzer` |
 | `SettingsWindow.swift` | `SettingsModel` (reads/writes UserDefaults and the Keychain) and the Settings window |
+| `SayIt.swift` | "How do I say…" prompt, its views and standalone panel |
+| `WordBook.swift` | My Words store, spaced repetition, daily reminder, practice window |
+| `TypingAssistant.swift` | Fix as you type: watching the focused field, checking, the badge |
 | `AXDump.swift` | Developer tool: dumps an app's accessibility tree (`--ax-dump`) |
 
 ## Backends
@@ -98,6 +103,21 @@ Caption lines grow and get corrected while someone speaks. A line counts as fini
 line follows it or it hasn't changed for 1.5 s; only then is it translated (up to three at a time,
 with the previous three lines as context). Lines are matched across polls by Zoom's timestamp, or
 by speaker and shared prefix for Meet.
+
+**Fix as you type.** A 0.6 s timer reads the focused element (system-wide `AXFocusedUIElement`):
+text areas and fields only, never `AXSecureTextField`, and not in terminals, code editors or
+password managers. When the value hasn't changed for 1.3 s, the sentence around the caret
+(`enumerateSubstrings(.bySentences)`, UTF-16 offsets like Accessibility) is checked if it's English
+and at least three words; results are cached per sentence. Only real mistakes (`ok == false`)
+show the badge, placed with `AXBoundsForRange` when the app supports it, else at the field's corner.
+Clicking selects the sentence (`AXSelectedTextRange`) so **Replace** pastes over exactly it.
+Chromium/Electron apps get `AXManualAccessibility` so their fields expose text.
+
+**My Words.** Leitner boxes with 1, 2, 4, 8, 16, 32, 64-day intervals: *Got it* moves a word up a
+box, *Hard* waits half the interval, *Again* goes back to box 0 and returns in 10 minutes.
+
+**Word by word everywhere.** `GlossStore` holds meanings per text; the selection panel's model
+inherits from it and the meeting window has its own, so both use the same `TextBlock`/`WordInfoBar`.
 
 ## Local model lifecycle (the "only when needed" rule)
 

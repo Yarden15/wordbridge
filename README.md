@@ -51,10 +51,39 @@ your microphone, so your own sentences show up too (marked "You"); anything alre
 target language is shown without a translation. With speakers instead of headphones, the
 microphone may pick up the other side as well.
 
+**In the meeting window you can also:**
+
+- **Summarize** (clipboard icon) — a summary, decisions and action items with who owns them,
+  in the language you translate into. Copy it with one click.
+- **How do I say…** — the field at the bottom: write what you want to say in Hebrew and get two
+  natural English ways to say it, fitted to the conversation.
+- **Word by word** — point at any word of what was said to see its meaning.
+- **Text size** and **subtitles mode** — a small see-through strip with only the latest lines.
+
+### How do I say…
+
+`⌘⇧⌥E` opens the same "How do I say it in English?" box anywhere: write in Hebrew (or broken
+English), get a conversational and a more professional version, each with a short note on when
+to use it.
+
+### My Words and practice
+
+The bookmark button saves a word or phrase — in word by word, next to short translations, and
+next to "How do I say…" answers. **Practice My Words** in the menu shows them as flash cards
+with spaced repetition (*Again / Hard / Got it*, keys 1–3); a daily reminder (Settings › General)
+brings you back. Words are stored in `~/Library/Application Support/Wordbridge/words.json`.
+
+### Fix as you type
+
+Turn on **Settings › General › Check my writing as I type**. When you pause after an English
+sentence in any app, Wordbridge checks it; if something should be fixed, a small orange badge
+appears next to the text. Click it to see the suggestions and **Replace** the sentence.
+Never in password fields, terminals or code editors. Off by default: with Gemini, the sentences
+you type are sent to Google.
+
 ### Planned
 
-- **Fix as you type** — spelling and grammar underlines in any text field.
-- **Learn while you work** — words you look up are saved for later practice (spaced repetition).
+- **Underlines** for fix as you type, right on the mistaken words.
 - More languages (Hebrew ⇄ English first).
 
 ## Why
@@ -153,7 +182,10 @@ B=build/Wordbridge.app/Contents/MacOS/Wordbridge
 $B --translate "some text"     # translate and print the result
 $B --check "some text"         # writing check; changed words in [brackets]
 $B --gloss "some text"         # word-by-word meanings
+$B --sayit "טקסט בעברית"        # how do I say it in English
+$B --summarize "Dana: …"       # summarize a meeting transcript
 open build/Wordbridge.app --args --meeting               # open meeting translation
+open build/Wordbridge.app --args --practice --say --settings   # open those windows
 open build/Wordbridge.app --args --listen 30 /tmp/heard.txt [he] [mic]   # transcribe all sound (or the mic) for 30 s
 open build/Wordbridge.app --args --ax-dump us.zoom.xos /tmp/tree.txt   # dump an app's accessibility tree
 open build/Wordbridge.app --args --improve "some text"   # open the window directly

@@ -2,13 +2,19 @@ import AppKit
 import Carbon
 import ServiceManagement
 import UniformTypeIdentifiers
+import UserNotifications
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate, UNUserNotificationCenterDelegate {
     private var statusItem: NSStatusItem!
     private var translateHotKey: HotKey?
     private var improveHotKey: HotKey?
     private var meetingHotKey: HotKey?
+    private var sayItHotKey: HotKey?
+    private let sayItPanel = SayItPanelController()
+    private let practiceWindow = PracticeWindowController()
+    private let practiceItem = NSMenuItem()
+    private let typingAssistant = TypingAssistant()
     private let assistantPanel = AssistantPanelController()
     private let meetingPanel = MeetingPanelController()
     private let meetingItem = NSMenuItem()
@@ -43,13 +49,35 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.toggleMeeting()
         }
 
+        // ⌘⇧⌥E — "How do I say this in English?"
+        sayItHotKey = HotKey(
+            id: 4, keyCode: kVK_ANSI_E, modifiers: cmdKey | shiftKey | optionKey
+        ) { [weak self] in
+            self?.showSayIt()
+        }
+
         Accessibility.requestIfNeeded()
+
+        // Fix as you type (when turned on in Settings).
+        typingAssistant.onOpen = { [weak self] sentence, check, point, app in
+            self?.assistantPanel.show(text: sentence, mode: .improve, near: point, sourceApp: app, check: check)
+        }
+        typingAssistant.refresh()
+        NotificationCenter.default.addObserver(forName: .typingSettingsChanged, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.typingAssistant.refresh() }
+        }
+
+        // The daily practice reminder opens the practice window when clicked.
+        UNUserNotificationCenter.current().delegate = self
+        PracticeReminder.reschedule()
 
         // Developer aid: `open Wordbridge.app --args --show "text"` (or `--improve "text"`) opens the panel directly;
         // `--meeting` opens meeting translation.
         let args = CommandLine.arguments
         if args.contains("--meeting") { meetingPanel.show() }
         if args.contains("--settings") { settingsWindow.show() }
+        if args.contains("--practice") { practiceWindow.show() }
+        if args.contains("--say") { sayItPanel.show() }
         for (flag, mode) in [("--show", AssistantMode.translate), ("--improve", .improve)] {
             if let index = args.firstIndex(of: flag), index + 1 < args.count, let screen = NSScreen.main {
                 let center = NSPoint(x: screen.visibleFrame.midX - 230, y: screen.visibleFrame.midY + 200)
@@ -86,6 +114,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         meetingItem.keyEquivalentModifierMask = [.command, .shift, .option]
         meetingItem.target = self
         menu.addItem(meetingItem)
+
+        let sayIt = NSMenuItem(title: "How Do I Say…", action: #selector(showSayIt), keyEquivalent: "e")
+        sayIt.keyEquivalentModifierMask = [.command, .shift, .option]
+        sayIt.target = self
+        menu.addItem(sayIt)
+
+        practiceItem.action = #selector(showPractice)
+        practiceItem.target = self
+        menu.addItem(practiceItem)
 
         menu.addItem(.separator())
 
@@ -145,6 +182,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         rebuildModelMenu()
 
         meetingItem.title = meetingPanel.isOpen ? "Stop Meeting Translation" : "Translate Meeting"
+        let due = WordBook.shared.dueWords.count
+        practiceItem.title = due > 0 ? "Practice My Words (\(due) waiting)" : "Practice My Words"
     }
 
     /// Lists the models found on this Mac and on connected drives, with the current one checked.
@@ -290,6 +329,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleMeeting() {
         meetingPanel.toggle()
+    }
+
+    @objc private func showSayIt() {
+        sayItPanel.show()
+    }
+
+    @objc private func showPractice() {
+        practiceWindow.show()
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        await MainActor.run { practiceWindow.show() }
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions {
+        [.banner]
     }
 
     @objc private func openSettings() {

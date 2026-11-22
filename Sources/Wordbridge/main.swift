@@ -26,13 +26,21 @@ MainActor.assumeIsolated {
 
     // Developer self-tests for the writing check and word meanings:
     //   Wordbridge --check "text"    Wordbridge --gloss "text"
-    for flag in ["--check", "--gloss"] {
+    //   Wordbridge --sayit "text"    Wordbridge --summarize "Dana: …⏎Tom: …"
+    for flag in ["--check", "--gloss", "--sayit", "--summarize"] {
         guard let index = args.firstIndex(of: flag), index + 1 < args.count else { continue }
         let text = args[index + 1]
         Task { @MainActor in
             let started = Date()
             do {
-                if flag == "--check" {
+                if flag == "--sayit" {
+                    for option in try await SayIt.phrasings(for: text) {
+                        print("• \(option.text)\n  \(option.note ?? "")")
+                    }
+                } else if flag == "--summarize" {
+                    let summary = try await MeetingSummarizer.summarize(transcript: text, in: .hebrew)
+                    print(summary.asText(title: "Summary"))
+                } else if flag == "--check" {
                     let check = try await WritingAssistant.check(text)
                     print("ok: \(check.ok)")
                     for suggestion in check.suggestions {
