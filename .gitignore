@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+
+# Swift Package Manager / Xcode
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+*.xcuserstate
+
+# Local AI models (downloaded at runtime, never committed)
+Models/
+*.gguf
+*.safetensors
+*.mlpackage
+*.mlmodelc
