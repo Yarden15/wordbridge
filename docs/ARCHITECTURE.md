@@ -61,8 +61,8 @@ Models must have a license that allows free redistribution and use.
 Candidates to evaluate (pick by Hebrew quality vs. size at implementation time):
 
 - Translation: Helsinki-NLP Opus-MT `en-he` / `he-en` (Marian, CC-BY 4.0)
-- LLM: small multilingual instruction models with good Hebrew, e.g. Qwen (Apache-2.0) or Gemma 3 1B/4B,
-  quantized to 4-bit GGUF / MLX.
+- LLM (chosen after benchmarking, see `tools/model-bench/results.md`): **Gemma 4 E4B** Q4_K_M (5 GB, Apache-2.0)
+  as default, **Gemma 4 E2B** Q4_K_M (3.1 GB) as a lighter option. Runs via llama.cpp `llama-server`.
 - Optional: Apple Foundation Models (macOS 26+) when available — zero download, if language support fits.
 
 ## Distribution

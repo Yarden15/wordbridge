@@ -1,0 +1,732 @@
+[
+  {
+    "model": "Qwen3.5-2B-Q4_K_M.gguf",
+    "size_gb": 1.28,
+    "cases": [
+      {
+        "kind": "translate_en_he",
+        "input": "Can you send me the report by the end of the day? I need to review it before the meeting.",
+        "output": "שלום, אשמח להעביר לך את המסמך עד סוף היום. אני צריך לעדכן אותו לפני המצגה.",
+        "seconds": 1.61,
+        "tokens": 37,
+        "tokens_per_sec": 61.3
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "We're running out of time, so let's cut to the chase.",
+        "output": "יש לנו פחות זמן, אז נעבור ישירות לנקודת המעבר.",
+        "seconds": 0.38,
+        "tokens": 22,
+        "tokens_per_sec": 70.7
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "The deployment failed because the environment variable wasn't set.",
+        "output": "ההתקבלות נכשלה כי המשתנה סביבי לא היה מוגדר.",
+        "seconds": 0.48,
+        "tokens": 24,
+        "tokens_per_sec": 59.9
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "I'm looking forward to hearing from you.",
+        "output": "אני צופה בהתקדמות להשפיע עליך.",
+        "seconds": 0.5,
+        "tokens": 18,
+        "tokens_per_sec": 44.3
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "אני אבדוק את זה ואחזור אליך עד מחר בבוקר.",
+        "output": "I will check this and return to you by tomorrow morning.",
+        "seconds": 0.35,
+        "tokens": 13,
+        "tokens_per_sec": 67.6
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "תוכל להסביר לי שוב מה בדיוק הבעיה? לא הבנתי עד הסוף.",
+        "output": "Can you explain once more exactly what the problem is? I still don't understand the end.",
+        "seconds": 0.45,
+        "tokens": 20,
+        "tokens_per_sec": 56.9
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "יאללה, בוא נסגור את זה היום ונעבור לפרויקט הבא.",
+        "output": "Hey, let's wrap this up today and move on to the next project.",
+        "seconds": 0.39,
+        "tokens": 17,
+        "tokens_per_sec": 63.1
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "השרת נפל באמצע הלילה ואף אחד לא קיבל התראה.",
+        "output": "The server crashed mid-night, and no one received a notification.",
+        "seconds": 0.28,
+        "tokens": 14,
+        "tokens_per_sec": 70.2
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "output": "- \"She runs a small design company in Berlin.\"\n— \"She manages the company.\"",
+        "seconds": 0.67,
+        "tokens": 20,
+        "tokens_per_sec": 67.9
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "output": "— \"table\" (העלית) — \"העלית את הדיון עד סוף השבוע\"",
+        "seconds": 0.54,
+        "tokens": 28,
+        "tokens_per_sec": 59.7
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "output": "- rough around the edges — \"rough\" here means imperfect or not smooth, and \"around the edges\" refers to the boundaries or limits of something.",
+        "seconds": 0.54,
+        "tokens": 32,
+        "tokens_per_sec": 67.8
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Please make sure the build passes before you merge.\"\nWord: passes",
+        "output": "- passes — \"passes\" here means \"passes successfully\" or \"succeeds,\" indicating that the build completed without errors.\n — \"passes\" means the build succeeded, not that it is moving forward.",
+        "seconds": 0.74,
+        "tokens": 44,
+        "tokens_per_sec": 65.7
+      },
+      {
+        "kind": "grammar",
+        "input": "please fix that santence",
+        "output": "{\n  \"corrected\": \"Please fix that sentence.\",\n  \"changes\": [\n    {\n      \"from\": \"please\",\n      \"to\": \"Please\",\n      \"why\": \"Capitalized the first letter of the sentence.\"\n    },\n    {\n      \"from\": \"that santence\",\n      \"to\": \"that sentence.\",\n      \"why\": \"Corrected spelling ('santence' to 'sentence') and punctuation (added period).\"\n    }\n  ]\n}",
+        "seconds": 2.5,
+        "tokens": 111,
+        "tokens_per_sec": 63.6
+      },
+      {
+        "kind": "grammar",
+        "input": "i didnt received you're email yesterday",
+        "output": "{\n  \"corrected\": \"I didn't receive your email yesterday.\",\n  \"changes\": [\n    {\n      \"from\": \"i didnt received\",\n      \"to\": \"I didn't receive\",\n      \"why\": \"Corrected subject-verb agreement and past tense verb form.\"\n    },\n    {\n      \"from\": \"you're\",\n      \"to\": \"your\",\n      \"why\": \"Fixed the possessive pronoun to match the object 'email'.\"\n    },\n    {\n      \"from\": \"yesterday\",\n      \"to\": \"yesterday\",\n      \"why\": \"No change needed; already in correct past tense.\"\n    }\n  ]\n}",
+        "seconds": 2.36,
+        "tokens": 156,
+        "tokens_per_sec": 67.9
+      },
+      {
+        "kind": "grammar",
+        "input": "can you explain me how it work?",
+        "output": "{\n  \"corrected\": \"Can you explain how it works?\",\n  \"changes\": [\n    {\n      \"from\": \"can you explain me how it work?\",\n      \"to\": \"Can you explain how it works?\",\n      \"why\": \"Removed the unnecessary 'me' and changed 'work' to 'works' for grammatical agreement.\"\n    }\n  ]\n}",
+        "seconds": 1.36,
+        "tokens": 86,
+        "tokens_per_sec": 66.9
+      },
+      {
+        "kind": "grammar",
+        "input": "we was discuss about this in the meeting and decide to postpone it",
+        "output": "{\n  \"corrected\": \"We discussed this in the meeting and decided to postpone it.\",\n  \"changes\": [\n    {\n      \"from\": \"we was discuss about\",\n      \"to\": \"We discussed this\",\n      \"why\": \"Corrected subject-verb agreement ('we was' to 'We discussed') and changed 'discuss about' to the more natural 'discussed this'\"\n    },\n    {\n      \"from\": \"decide to postpone it\",\n      \"to\": \"decided to postpone it\",\n      \"why\": \"Changed 'decide' to 'decided' to match the past tense 'discussed'\"\n    }\n  ]\n}",
+        "seconds": 2.26,
+        "tokens": 151,
+        "tokens_per_sec": 69.3
+      },
+      {
+        "kind": "grammar",
+        "input": "Its very importent to check the logs befor deploying.",
+        "output": "{\n  \"corrected\": \"It's very important to check the logs before deploying.\",\n  \"changes\": [\n    {\n      \"from\": \"Its\",\n      \"to\": \"It's\",\n      \"why\": \"Corrected the contraction for proper grammar.\"\n    },\n    {\n      \"from\": \"importent\",\n      \"to\": \"important\",\n      \"why\": \"Fixed spelling error.\"\n    },\n    {\n      \"from\": \"befor\",\n      \"to\": \"before\",\n      \"why\": \"Corrected spelling and added missing space.\"\n    }\n  ]\n}",
+        "seconds": 2.14,
+        "tokens": 138,
+        "tokens_per_sec": 67.7
+      }
+    ],
+    "load_seconds": 47.4,
+    "peak_rss_mb": 1205,
+    "avg_tokens_per_sec": 64.1,
+    "avg_seconds": 1.03
+  },
+  {
+    "model": "Qwen3.5-4B-Q4_K_M.gguf",
+    "size_gb": 2.74,
+    "cases": [
+      {
+        "kind": "translate_en_he",
+        "input": "Can you send me the report by the end of the day? I need to review it before the meeting.",
+        "output": "האם תוכל לשלוח לי את הדו\"ח עד סוף היום? אני צריך לבחון אותו לפני ההתראה.",
+        "seconds": 1.89,
+        "tokens": 33,
+        "tokens_per_sec": 30.7
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "We're running out of time, so let's cut to the chase.",
+        "output": "אנחנו מתחילים להישאר ללא זמן, אז בואו נגיע ישירות למטרה.",
+        "seconds": 1.11,
+        "tokens": 27,
+        "tokens_per_sec": 31.4
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "The deployment failed because the environment variable wasn't set.",
+        "output": "ההתקנה נכשלה מכיוון שהמשתנה הסביבתי לא הוגדר.",
+        "seconds": 1.13,
+        "tokens": 26,
+        "tokens_per_sec": 31.1
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "I'm looking forward to hearing from you.",
+        "output": "מחכה לשמוע ממך.",
+        "seconds": 0.55,
+        "tokens": 10,
+        "tokens_per_sec": 33.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "אני אבדוק את זה ואחזור אליך עד מחר בבוקר.",
+        "output": "I will check this and get back to you by tomorrow morning.",
+        "seconds": 1.03,
+        "tokens": 14,
+        "tokens_per_sec": 30.7
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "תוכל להסביר לי שוב מה בדיוק הבעיה? לא הבנתי עד הסוף.",
+        "output": "Could you explain to me again exactly what the problem is? I didn't understand it all the way through.",
+        "seconds": 1.15,
+        "tokens": 23,
+        "tokens_per_sec": 30.8
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "יאללה, בוא נסגור את זה היום ונעבור לפרויקט הבא.",
+        "output": "Alright, let's wrap this up today and move on to the next project.",
+        "seconds": 1.08,
+        "tokens": 17,
+        "tokens_per_sec": 27.8
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "השרת נפל באמצע הלילה ואף אחד לא קיבל התראה.",
+        "output": "The server crashed in the middle of the night and no one received an alert.",
+        "seconds": 1.0,
+        "tokens": 17,
+        "tokens_per_sec": 27.0
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "output": "מנהלת — מנהלת חנות או חברה.",
+        "seconds": 1.4,
+        "tokens": 14,
+        "tokens_per_sec": 33.8
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "output": "להעביר לידה — להעביד את הדיון לזמן אחר.",
+        "seconds": 1.27,
+        "tokens": 23,
+        "tokens_per_sec": 26.1
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "output": "עדיין לא מושלם — עדיין יש חסרונות קטנים.",
+        "seconds": 1.17,
+        "tokens": 23,
+        "tokens_per_sec": 30.4
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Please make sure the build passes before you merge.\"\nWord: passes",
+        "output": "עובר בהצלחה — עובר את הבדיקות ללא שגיאות.",
+        "seconds": 0.92,
+        "tokens": 19,
+        "tokens_per_sec": 29.0
+      },
+      {
+        "kind": "grammar",
+        "input": "please fix that santence",
+        "output": "{\"corrected\": \"Please fix that sentence.\", \"changes\": [{\"from\": \"please\", \"to\": \"Please\", \"why\": \"Capitalized the first letter for proper sentence case.\"}, {\"from\": \"santence\", \"to\": \"sentence\", \"why\": \"Corrected the spelling error.\"}]}",
+        "seconds": 3.92,
+        "tokens": 67,
+        "tokens_per_sec": 31.7
+      },
+      {
+        "kind": "grammar",
+        "input": "i didnt received you're email yesterday",
+        "output": "{\"corrected\": \"I didn't receive your email yesterday.\", \"changes\": [{\"from\": \"i\", \"to\": \"I\", \"why\": \"Sentences must start with a capital letter.\"}, {\"from\": \"didnt\", \"to\": \"didn't\", \"why\": \"Added apostrophe for correct contraction.\"}, {\"from\": \"received\", \"to\": \"receive\", \"why\": \"After 'did', use the base form of the verb.\"}, {\"from\": \"you're\", \"to\": \"your\", \"why\": \"'You're' means 'you are'; 'your' is the possessive adjective needed here.\"}]}",
+        "seconds": 4.74,
+        "tokens": 136,
+        "tokens_per_sec": 30.4
+      },
+      {
+        "kind": "grammar",
+        "input": "can you explain me how it work?",
+        "output": "{\"corrected\": \"Can you explain how it works?\", \"changes\": [{\"from\": \"can\", \"to\": \"Can\", \"why\": \"Capitalized the first letter for sentence case.\"}, {\"from\": \"explain me\", \"to\": \"explain\", \"why\": \"Removed redundant 'me' as 'explain' is transitive in this context.\"}, {\"from\": \"how it work\", \"to\": \"how it works\", \"why\": \"Corrected subject-verb agreement ('it' requires singular verb 'works').\"}]}",
+        "seconds": 3.96,
+        "tokens": 113,
+        "tokens_per_sec": 30.4
+      },
+      {
+        "kind": "grammar",
+        "input": "we was discuss about this in the meeting and decide to postpone it",
+        "output": "{\"corrected\": \"We discussed this in the meeting and decided to postpone it.\", \"changes\": [{\"from\": \"we\", \"to\": \"We\", \"why\": \"Capitalized the first letter of the sentence.\"}, {\"from\": \"was\", \"to\": \"discussed\", \"why\": \"Corrected the verb tense and subject-verb agreement (we discussed, not we was).\"}, {\"from\": \"discuss about\", \"to\": \"discussed\", \"why\": \"Removed 'about' as 'discuss' does not require it in this context.\"}, {\"from\": \"decide\", \"to\": \"decided\", \"why\": \"Corrected the verb tense to match the past context.\"}, {\"from\": \"to postpone it\", \"to\": \"to postpone it\", \"why\": \"No change; this part was already grammatically correct.\"}]}",
+        "seconds": 6.38,
+        "tokens": 183,
+        "tokens_per_sec": 30.2
+      },
+      {
+        "kind": "grammar",
+        "input": "Its very importent to check the logs befor deploying.",
+        "output": "{\"corrected\": \"It's very important to check the logs before deploying.\", \"changes\": [{\"from\": \"Its\", \"to\": \"It's\", \"why\": \"'Its' is a possessive pronoun; 'It's' is the contraction for 'it is'.\"}, {\"from\": \"importent\", \"to\": \"important\", \"why\": \"Corrected spelling error.\"}, {\"from\": \"befor\", \"to\": \"before\", \"why\": \"Corrected spelling error.\"}]}",
+        "seconds": 3.99,
+        "tokens": 106,
+        "tokens_per_sec": 31.6
+      }
+    ],
+    "load_seconds": 123.4,
+    "peak_rss_mb": 991,
+    "avg_tokens_per_sec": 30.4,
+    "avg_seconds": 2.16
+  },
+  {
+    "model": "gemma-4-E2B-it-Q4_K_M.gguf",
+    "size_gb": 3.11,
+    "cases": [
+      {
+        "kind": "translate_en_he",
+        "input": "Can you send me the report by the end of the day? I need to review it before the meeting.",
+        "output": "תוכל לשלוח לי את הדו\"ח עד סוף היום? אני צריך לעיין בו לפני הפגישה.",
+        "seconds": 2.49,
+        "tokens": 27,
+        "tokens_per_sec": 26.7
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "We're running out of time, so let's cut to the chase.",
+        "output": "אנחנו מפספסים זמן, אז בואו נגיע לעניין.",
+        "seconds": 0.72,
+        "tokens": 18,
+        "tokens_per_sec": 29.9
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "The deployment failed because the environment variable wasn't set.",
+        "output": "הפריסה נכשלה מכיוון שמשתנה הסביבה לא הוגדר.",
+        "seconds": 1.05,
+        "tokens": 22,
+        "tokens_per_sec": 28.2
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "I'm looking forward to hearing from you.",
+        "output": "אני מצפה לשמוע ממך.",
+        "seconds": 0.51,
+        "tokens": 11,
+        "tokens_per_sec": 26.6
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "אני אבדוק את זה ואחזור אליך עד מחר בבוקר.",
+        "output": "I will check this and get back to you by tomorrow morning.",
+        "seconds": 0.6,
+        "tokens": 14,
+        "tokens_per_sec": 43.5
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "תוכל להסביר לי שוב מה בדיוק הבעיה? לא הבנתי עד הסוף.",
+        "output": "Can you explain to me again what exactly the problem is? I didn't understand completely.",
+        "seconds": 0.82,
+        "tokens": 20,
+        "tokens_per_sec": 34.9
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "יאללה, בוא נסגור את זה היום ונעבור לפרויקט הבא.",
+        "output": "Come on, let's close this today and move on to the next project.",
+        "seconds": 0.64,
+        "tokens": 18,
+        "tokens_per_sec": 41.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "השרת נפל באמצע הלילה ואף אחד לא קיבל התראה.",
+        "output": "The server crashed in the middle of the night and no one received a notification.",
+        "seconds": 0.7,
+        "tokens": 17,
+        "tokens_per_sec": 33.4
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "output": "מנהלת — היא מפעילה או מנהלת את החברה.",
+        "seconds": 1.06,
+        "tokens": 17,
+        "tokens_per_sec": 33.3
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "output": "שולחן — להשהות הדיון עד השבוע הבא.",
+        "seconds": 0.62,
+        "tokens": 18,
+        "tokens_per_sec": 34.6
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "output": "קשה מאוד — יש חוסר שלמות או פגמים.",
+        "seconds": 0.69,
+        "tokens": 16,
+        "tokens_per_sec": 30.7
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Please make sure the build passes before you merge.\"\nWord: passes",
+        "output": "עובר — הקידוד עובר בדיקות לפני איחוד הקוד.",
+        "seconds": 0.71,
+        "tokens": 20,
+        "tokens_per_sec": 34.6
+      },
+      {
+        "kind": "grammar",
+        "input": "please fix that santence",
+        "output": "```json\n{\n  \"corrected\": \"Please fix that sentence.\",\n  \"changes\": [\n    {\n      \"from\": \"please fix that santence\",\n      \"to\": \"Please fix that sentence.\",\n      \"why\": \"Corrected spelling of 'sentence' and capitalized the first letter of the sentence.\"\n    }\n  ]\n}\n```",
+        "seconds": 2.6,
+        "tokens": 80,
+        "tokens_per_sec": 41.7
+      },
+      {
+        "kind": "grammar",
+        "input": "i didnt received you're email yesterday",
+        "output": "```json\n{\n  \"corrected\": \"I didn't receive your email yesterday.\",\n  \"changes\": [\n    {\n      \"from\": \"i\",\n      \"to\": \"I\",\n      \"why\": \"Capitalize the first word of a sentence.\"\n    },\n    {\n      \"from\": \"didnt\",\n      \"to\": \"didn't\",\n      \"why\": \"Use the correct contraction for 'did not'.\"\n    },\n    {\n      \"from\": \"you're\",\n      \"to\": \"your\",\n      \"why\": \"Correct the homophone; 'your' is the possessive pronoun needed here.\"\n    },\n    {\n      \"from\": \".\",\n      \"to\": \".\",\n      \"why\": \"Add a period to end the sentence.\"\n    }\n  ]\n}\n```",
+        "seconds": 4.51,
+        "tokens": 188,
+        "tokens_per_sec": 43.4
+      },
+      {
+        "kind": "grammar",
+        "input": "can you explain me how it work?",
+        "output": "```json\n{\n  \"corrected\": \"Can you explain how it works?\",\n  \"changes\": [\n    {\n      \"from\": \"can\",\n      \"to\": \"Can\",\n      \"why\": \"Capitalize the first word of a sentence.\"\n    },\n    {\n      \"from\": \"explain me\",\n      \"to\": \"explain\",\n      \"why\": \"The verb 'explain' does not require the object pronoun 'me' when followed by a clause.\"\n    },\n    {\n      \"from\": \"how it work\",\n      \"to\": \"how it works\",\n      \"why\": \"The verb needs to be in the third-person singular form ('works') to agree with the subject 'it'.\"\n    }\n  ]\n}\n```",
+        "seconds": 4.1,
+        "tokens": 172,
+        "tokens_per_sec": 43.1
+      },
+      {
+        "kind": "grammar",
+        "input": "we was discuss about this in the meeting and decide to postpone it",
+        "output": "```json\n{\n  \"corrected\": \"We discussed this in the meeting and decided to postpone it.\",\n  \"changes\": [\n    {\n      \"from\": \"we was\",\n      \"to\": \"We were\",\n      \"why\": \"Corrected subject-verb agreement (we were).\"\n    },\n    {\n      \"from\": \"discuss\",\n      \"to\": \"discussed\",\n      \"why\": \"Changed the verb to the past tense to match the context.\"\n    },\n    {\n      \"from\": \"about this\",\n      \"to\": \"this\",\n      \"why\": \"Made the sentence more concise.\"\n    },\n    {\n      \"from\": \"and decide\",\n      \"to\": \"and decided\",\n      \"why\": \"Changed the verb to the past tense to maintain tense consistency.\"\n    }\n  ]\n}\n```",
+        "seconds": 4.52,
+        "tokens": 193,
+        "tokens_per_sec": 44.3
+      },
+      {
+        "kind": "grammar",
+        "input": "Its very importent to check the logs befor deploying.",
+        "output": "```json\n{\n  \"corrected\": \"It is very important to check the logs before deploying.\",\n  \"changes\": [\n    {\n      \"from\": \"Its\",\n      \"to\": \"It is\",\n      \"why\": \"Corrected the contraction and used the full form for better formality.\"\n    },\n    {\n      \"from\": \"importent\",\n      \"to\": \"important\",\n      \"why\": \"Corrected the spelling.\"\n    },\n    {\n      \"from\": \"befor\",\n      \"to\": \"before\",\n      \"why\": \"Corrected the spelling.\"\n    }\n  ]\n}\n```",
+        "seconds": 3.41,
+        "tokens": 145,
+        "tokens_per_sec": 45.2
+      }
+    ],
+    "load_seconds": 70.2,
+    "peak_rss_mb": 1109,
+    "avg_tokens_per_sec": 36.2,
+    "avg_seconds": 1.75
+  },
+  {
+    "model": "gemma-4-E4B-it-Q4_K_M.gguf",
+    "size_gb": 4.98,
+    "cases": [
+      {
+        "kind": "translate_en_he",
+        "input": "Can you send me the report by the end of the day? I need to review it before the meeting.",
+        "output": "האם תוכל לשלוח לי את הדוח עד סוף היום? אני צריך לעבור עליו לפני הפגישה.",
+        "seconds": 2.83,
+        "tokens": 28,
+        "tokens_per_sec": 18.0
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "We're running out of time, so let's cut to the chase.",
+        "output": "אנחנו ממהרים, אז בואו ניכנס לעניין.",
+        "seconds": 1.2,
+        "tokens": 16,
+        "tokens_per_sec": 19.7
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "The deployment failed because the environment variable wasn't set.",
+        "output": "הפריסה נכשלה מכיוון שהמשתנה הסביבתי לא הוגדר.",
+        "seconds": 1.65,
+        "tokens": 23,
+        "tokens_per_sec": 21.2
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "I'm looking forward to hearing from you.",
+        "output": "אני מצפה לשמוע ממך.",
+        "seconds": 0.81,
+        "tokens": 11,
+        "tokens_per_sec": 19.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "אני אבדוק את זה ואחזור אליך עד מחר בבוקר.",
+        "output": "I will check this and get back to you by tomorrow morning.",
+        "seconds": 1.68,
+        "tokens": 14,
+        "tokens_per_sec": 17.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "תוכל להסביר לי שוב מה בדיוק הבעיה? לא הבנתי עד הסוף.",
+        "output": "Can you explain to me again what the problem exactly is? I didn't understand completely.",
+        "seconds": 1.53,
+        "tokens": 20,
+        "tokens_per_sec": 22.5
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "יאללה, בוא נסגור את זה היום ונעבור לפרויקט הבא.",
+        "output": "Come on, let's close this today and move on to the next project.",
+        "seconds": 1.44,
+        "tokens": 18,
+        "tokens_per_sec": 18.6
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "השרת נפל באמצע הלילה ואף אחד לא קיבל התראה.",
+        "output": "The server crashed in the middle of the night and no one received a notification.",
+        "seconds": 1.36,
+        "tokens": 17,
+        "tokens_per_sec": 19.9
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "output": "מנהלת — היא מנהלת אוהלת את החברה הזו.",
+        "seconds": 1.93,
+        "tokens": 18,
+        "tokens_per_sec": 20.7
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "output": "להניח/לדחות — לדחות או להקפיא דיון עד זמן מאוחר יותר.",
+        "seconds": 1.49,
+        "tokens": 25,
+        "tokens_per_sec": 20.7
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "output": "גס/לא מלוטש — לא מושלם, דורש שיפורים קטנים.",
+        "seconds": 1.68,
+        "tokens": 25,
+        "tokens_per_sec": 20.3
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Please make sure the build passes before you merge.\"\nWord: passes",
+        "output": "עובר — בהקשר זה, המשמעות היא שהבדיקה מצליחה.",
+        "seconds": 1.33,
+        "tokens": 22,
+        "tokens_per_sec": 21.0
+      },
+      {
+        "kind": "grammar",
+        "input": "please fix that santence",
+        "output": "{\"corrected\": \"Please fix that sentence.\", \"changes\": [{\"from\": \"santence\", \"to\": \"sentence\", \"why\": \"Spelling correction\"}, {\"from\": \"please fix that santence\", \"to\": \"Please fix that sentence.\", \"why\": \"Capitalization and punctuation correction\"}]}",
+        "seconds": 3.87,
+        "tokens": 64,
+        "tokens_per_sec": 22.6
+      },
+      {
+        "kind": "grammar",
+        "input": "i didnt received you're email yesterday",
+        "output": "```json\n{\n  \"corrected\": \"I didn't receive your email yesterday.\",\n  \"changes\": [\n    {\n      \"from\": \"i\",\n      \"to\": \"I\",\n      \"why\": \"Capitalization at the start of a sentence.\"\n    },\n    {\n      \"from\": \"didnt\",\n      \"to\": \"didn't\",\n      \"why\": \"Contraction requires an apostrophe.\"\n    },\n    {\n      \"from\": \"received\",\n      \"to\": \"receive\",\n      \"why\": \"After 'did not' (didn't), the base form of the verb is used.\"\n    },\n    {\n      \"from\": \"you're\",\n      \"to\": \"your\",\n      \"why\": \"Correct possessive pronoun needed; 'you're' means 'you are'.\"\n    }\n  ]\n}\n```",
+        "seconds": 10.05,
+        "tokens": 201,
+        "tokens_per_sec": 21.4
+      },
+      {
+        "kind": "grammar",
+        "input": "can you explain me how it work?",
+        "output": "{\"corrected\": \"Can you explain how it works?\", \"changes\": [{\"from\": \"can you explain me\", \"to\": \"Can you explain\", \"why\": \"Removed 'me' as it is grammatically incorrect in this context.\"}, {\"from\": \"how it work?\", \"to\": \"how it works?\", \"why\": \"Corrected the verb agreement; 'it' requires the third-person singular form 'works'.\"}]}",
+        "seconds": 4.92,
+        "tokens": 90,
+        "tokens_per_sec": 20.1
+      },
+      {
+        "kind": "grammar",
+        "input": "we was discuss about this in the meeting and decide to postpone it",
+        "output": "```json\n{\n  \"corrected\": \"We discussed this in the meeting and decided to postpone it.\",\n  \"changes\": [\n    {\n      \"from\": \"we was\",\n      \"to\": \"We discussed\",\n      \"why\": \"Corrected subject-verb agreement and changed the phrasing to be more direct.\"\n    },\n    {\n      \"from\": \"discuss about\",\n      \"to\": \"discussed\",\n      \"why\": \"Removed the unnecessary preposition 'about' after 'discuss'.\"\n    },\n    {\n      \"from\": \"and decide\",\n      \"to\": \"and decided\",\n      \"why\": \"Ensured consistent past tense.\"\n    }\n  ]\n}\n```",
+        "seconds": 7.32,
+        "tokens": 157,
+        "tokens_per_sec": 26.4
+      },
+      {
+        "kind": "grammar",
+        "input": "Its very importent to check the logs befor deploying.",
+        "output": "```json\n{\n  \"corrected\": \"It's very important to check the logs before deploying.\",\n  \"changes\": [\n    {\n      \"from\": \"Its\",\n      \"to\": \"It's\",\n      \"why\": \"Corrected the contraction 'It is'.\"\n    },\n    {\n      \"from\": \"importent\",\n      \"to\": \"important\",\n      \"why\": \"Corrected spelling.\"\n    },\n    {\n      \"from\": \"befor\",\n      \"to\": \"before\",\n      \"why\": \"Corrected spelling.\"\n    }\n  ]\n}\n```",
+        "seconds": 6.52,
+        "tokens": 140,
+        "tokens_per_sec": 23.7
+      }
+    ],
+    "load_seconds": 191.6,
+    "peak_rss_mb": 708,
+    "avg_tokens_per_sec": 20.8,
+    "avg_seconds": 3.04
+  },
+  {
+    "model": "translategemma-4b-it.Q4_K_M.gguf",
+    "size_gb": 2.49,
+    "cases": [
+      {
+        "kind": "translate_en_he",
+        "input": "Can you send me the report by the end of the day? I need to review it before the meeting.",
+        "output": "As a professional translator, please translate the user's text from English to Hebrew, maintaining the meaning, tone, and formatting. Please provide only the translation, nothing else.\n\nCan you send me the report by the end of the day? I need to review it before the meeting.",
+        "seconds": 1.96,
+        "tokens": 59,
+        "tokens_per_sec": 38.5
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "We're running out of time, so let's cut to the chase.",
+        "output": "You are a professional translator. Translate the user's text from English to Hebrew, maintaining the meaning, tone, and formatting. Output only the translation, nothing else.\n\nWe're running out of time, so let's get straight to the point.",
+        "seconds": 1.87,
+        "tokens": 54,
+        "tokens_per_sec": 36.0
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "The deployment failed because the environment variable wasn't set.",
+        "output": "You are a professional translator. Translate the user's text from English to Hebrew, while preserving the meaning, tone, and formatting. Output only the translation, nothing else.\n\nThe deployment failed because the environment variable was not set.",
+        "seconds": 1.57,
+        "tokens": 48,
+        "tokens_per_sec": 38.2
+      },
+      {
+        "kind": "translate_en_he",
+        "input": "I'm looking forward to hearing from you.",
+        "output": "You are a professional translator. Please translate the user's text from English to Hebrew, while maintaining the meaning, tone, and formatting. Output only the translation, nothing else.\n\nI look forward to hearing from you.",
+        "seconds": 1.62,
+        "tokens": 46,
+        "tokens_per_sec": 35.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "אני אבדוק את זה ואחזור אליך עד מחר בבוקר.",
+        "output": "I will review this and get back to you by tomorrow morning.",
+        "seconds": 0.97,
+        "tokens": 14,
+        "tokens_per_sec": 35.4
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "תוכל להסביר לי שוב מה בדיוק הבעיה? לא הבנתי עד הסוף.",
+        "output": "Could you please explain the problem to me again? I didn't quite understand it.",
+        "seconds": 0.99,
+        "tokens": 19,
+        "tokens_per_sec": 33.9
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "יאללה, בוא נסגור את זה היום ונעבור לפרויקט הבא.",
+        "output": "Okay, let's wrap this up today and move on to the next project.",
+        "seconds": 0.84,
+        "tokens": 18,
+        "tokens_per_sec": 40.3
+      },
+      {
+        "kind": "translate_he_en",
+        "input": "השרת נפל באמצע הלילה ואף אחד לא קיבל התראה.",
+        "output": "The server crashed in the middle of the night, and no one received any notification.",
+        "seconds": 0.82,
+        "tokens": 18,
+        "tokens_per_sec": 36.0
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "output": "I help a Hebrew speaker learn English. The user provides a sentence and a word or phrase from it. Respond in Hebrew with the meaning of that word or phrase *as used in this sentence*: first the Hebrew translation (1-4 words), then ' — ' and a very short explanation (max 12 words). One line only.\nSentence: \"She runs a small design company in Berlin.\"\nWord: runs",
+        "seconds": 2.9,
+        "tokens": 87,
+        "tokens_per_sec": 36.1
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "output": "Okay, I will help a Hebrew speaker learn English. The user provides a sentence and a word or phrase from it. I will reply in Hebrew with the meaning of that word or phrase *as used in that sentence*: first the Hebrew translation (1-4 words), then ' — ', and a very short explanation (max 12 words). One line only.\n\nSentence: \"Let's table this discussion until next week.\"\nWord: table",
+        "seconds": 2.98,
+        "tokens": 93,
+        "tokens_per_sec": 37.7
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "output": "You help a Hebrew speaker learn English. The user provides a sentence and a word or phrase from it. Respond in Hebrew with the meaning of that word or phrase *as used in this sentence*: first the Hebrew translation (1-4 words), then ' — ' and a very short explanation (max 12 words). One line only.\n\nSentence: \"The new feature is still a bit rough around the edges.\"\nPhrase: rough around the edges",
+        "seconds": 3.06,
+        "tokens": 93,
+        "tokens_per_sec": 36.1
+      },
+      {
+        "kind": "word",
+        "input": "Sentence: \"Please make sure the build passes before you merge.\"\nWord: passes",
+        "output": "Please make sure the build passes before you merge.\nWord: passes\n\nHebrew translation: \"Please ensure that the build succeeds before merging.\"",
+        "seconds": 1.45,
+        "tokens": 30,
+        "tokens_per_sec": 37.2
+      },
+      {
+        "kind": "grammar",
+        "input": "please fix that santence",
+        "output": "You are an English writing assistant. Correct the spelling, grammar, capitalization, and punctuation in the user's sentence, and make it sound natural, while maintaining the meaning and keeping it concise. Please reply with only the JSON: {\"corrected\": \"...\", \"changes\": [{\"from\": \"...\", \"to\": \"...\", \"why\": \"...\"}]}\nPlease correct that sentence.",
+        "seconds": 2.56,
+        "tokens": 77,
+        "tokens_per_sec": 36.4
+      },
+      {
+        "kind": "grammar",
+        "input": "i didnt received you're email yesterday",
+        "output": "You are an English writing assistant. Correct the spelling, grammar, capitalization, and punctuation in the user's sentence, and make it sound natural, while maintaining the meaning and keeping it concise. Reply with JSON only: {\"corrected\": \"...\", \"changes\": [{\"from\": \"...\", \"to\": \"...\", \"why\": \"...\"}]}\nI didn't receive your email yesterday.",
+        "seconds": 2.8,
+        "tokens": 79,
+        "tokens_per_sec": 35.3
+      },
+      {
+        "kind": "grammar",
+        "input": "can you explain me how it work?",
+        "output": "You are an English writing assistant. Correct the spelling, grammar, capitalization, and punctuation in the user's sentence, and make it sound natural, while maintaining the meaning and keeping it concise. Respond with JSON only: {\"corrected\": \"...\", \"changes\": [{\"from\": \"...\", \"to\": \"...\", \"why\": \"...\"}]}\nCan you explain how it works?",
+        "seconds": 2.72,
+        "tokens": 77,
+        "tokens_per_sec": 35.9
+      },
+      {
+        "kind": "grammar",
+        "input": "we was discuss about this in the meeting and decide to postpone it",
+        "output": "You are an English writing assistant. Correct the spelling, grammar, capitalization, and punctuation in the user's sentence, and make it sound natural, while maintaining the meaning and keeping it concise. Reply with JSON only: {\"corrected\": \"...\", \"changes\": [{\"from\": \"...\", \"to\": \"...\", \"why\": \"...\"}]}\nWe discussed this in the meeting and decided to postpone it.",
+        "seconds": 2.88,
+        "tokens": 82,
+        "tokens_per_sec": 33.9
+      },
+      {
+        "kind": "grammar",
+        "input": "Its very importent to check the logs befor deploying.",
+        "output": "You are an English writing assistant. Correct the spelling, grammar, capitalization, and punctuation in the user's sentence, and make it sound natural, while maintaining the meaning and keeping it concise. Respond with JSON only: {\"corrected\": \"...\", \"changes\": [{\"from\": \"...\", \"to\": \"...\", \"why\": \"...\"}]}\nIt is very important to check the logs before deploying.",
+        "seconds": 2.79,
+        "tokens": 81,
+        "tokens_per_sec": 34.9
+      }
+    ],
+    "load_seconds": 91.0,
+    "peak_rss_mb": 796,
+    "avg_tokens_per_sec": 36.3,
+    "avg_seconds": 2.05
+  }
+]
