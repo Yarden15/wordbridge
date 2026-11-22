@@ -58,6 +58,17 @@ On first launch an onboarding screen downloads the default models into
 `~/Library/Application Support/Wordbridge/Models`, with size shown up front and checksum verification.
 Models must have a license that allows free redistribution and use.
 
+**Models on an external drive.** The models folder is configurable, so models (and the
+`llama-server` binary) can live on an external disk. Slow USB drives make loading take minutes
+(measured: ~190 s for Gemma 4 E4B from a USB HDD vs. seconds from the internal SSD), so the app must:
+
+- Warm up early: start loading as soon as the user opens a tooltip / translation panel or focuses a
+  text field after a pause, not on the first actual request.
+- Use a longer idle timeout when the model lives on a slow drive (e.g. 30 min instead of 5).
+- Show clear progress ("Loading model… 40%") instead of a silent spinner.
+- Detect when the drive is unmounted (`NSWorkspace.didUnmountNotification`): stop the server,
+  fall back to Tier 0 (spell check) and tell the user, rather than failing requests.
+
 Candidates to evaluate (pick by Hebrew quality vs. size at implementation time):
 
 - Translation: Helsinki-NLP Opus-MT `en-he` / `he-en` (Marian, CC-BY 4.0)
