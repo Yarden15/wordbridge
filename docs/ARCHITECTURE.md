@@ -19,7 +19,7 @@
 | Fix as you type | Planned | `NSSpellChecker` (instant) + LLM on pause, underline overlays |
 | Learning / review | Planned | SQLite of looked-up words, spaced repetition |
 | Meeting translation | Built | Captions via Accessibility (Meet, Zoom transcript), or a Core Audio process tap + `SpeechTranscriber` |
-| Settings window | Planned | Meeting source, languages |
+| Settings window | Built | SwiftUI `TabView` + grouped `Form`: General, Model, Meetings |
 
 ## Source layout
 
@@ -38,6 +38,7 @@
 | `MeetingTranslator.swift` | `MeetingSession` (lines, when a line is finished, translation queue), meeting window |
 | `MeetingCaptions.swift` | Finding the meeting (`MeetingApp`), reading Meet/Zoom captions (`CaptionReader`), `AXTree` helpers |
 | `MeetingAudio.swift` | `MeetingListener`: process tap on the meeting app's audio → `SpeechAnalyzer` |
+| `SettingsWindow.swift` | `SettingsModel` (reads/writes UserDefaults and the Keychain) and the Settings window |
 | `AXDump.swift` | Developer tool: dumps an app's accessibility tree (`--ax-dump`) |
 
 ## Backends

@@ -30,8 +30,8 @@ The window can be resized; it remembers the size you choose.
 
 `⌘⇧⌥M` (or **Translate Meeting** in the menu) opens a floating window that translates a Zoom or
 Google Meet call as it happens: each finished sentence shows up with its Hebrew translation
-under it. The text comes from one of two places (switch in the window, or choose a default under
-**Meeting Text From**):
+under it. The text comes from one of two places (switch in the window, or choose a default in
+**Settings › Meetings**):
 
 - **Captions** — the meeting's own captions, with speaker names.
   - *Google Meet* (Chrome, Edge, Brave, Arc): turn on captions (CC).
@@ -55,7 +55,6 @@ microphone may pick up the other side as well.
 
 - **Fix as you type** — spelling and grammar underlines in any text field.
 - **Learn while you work** — words you look up are saved for later practice (spaced repetition).
-- **Settings window** — meeting source, languages and more in one place.
 - More languages (Hebrew ⇄ English first).
 
 ## Why
@@ -81,9 +80,17 @@ signed and macOS will ask for Accessibility access again after every rebuild.
 On first launch, allow Wordbridge in **System Settings › Privacy & Security › Accessibility**
 (needed to read the selected text and to paste a suggestion back).
 
+## Settings
+
+**Settings…** (`⌘,` in the menu) has three tabs:
+
+- **General** — launch at login, Accessibility access, the shortcuts.
+- **Model** — Gemini or a local model, the Gemini key, unload the local model.
+- **Meetings** — where meeting text comes from, the languages, and whether to show what you say.
+
 ## Choose a model
 
-Pick one in the menu-bar menu under **Choose Model**.
+Pick one in **Settings › Model**, or in the menu-bar menu under **Choose Model**.
 
 ### Local model (default, private)
 

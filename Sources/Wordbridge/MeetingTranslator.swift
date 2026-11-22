@@ -71,8 +71,15 @@ final class MeetingSession: ObservableObject {
     private var startedAt = Date()
     private var stopped = false
 
+    private var settingsObserver: NSObjectProtocol?
+
     func start() {
         stopped = false
+        settingsObserver = NotificationCenter.default.addObserver(
+            forName: .meetingSettingsChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.reloadSettings() }
+        }
         meeting = MeetingApp.current()
         startedAt = Date()
         switch MeetingSource.preferred {
@@ -128,6 +135,20 @@ final class MeetingSession: ObservableObject {
     func stop() {
         stopped = true
         stopSources()
+        if let settingsObserver { NotificationCenter.default.removeObserver(settingsObserver) }
+        settingsObserver = nil
+    }
+
+    /// Picks up changes made in the Settings window.
+    private func reloadSettings() {
+        let newSpoken = Self.saved("meetingSpoken") ?? spoken
+        let newTarget = Self.saved("meetingTarget") ?? target
+        let newIncludeMe = UserDefaults.standard.object(forKey: "meetingIncludeMe") as? Bool ?? includeMe
+        let restart = mode == .voice && (newSpoken != spoken || newIncludeMe != includeMe)
+        spoken = newSpoken
+        target = newTarget
+        includeMe = newIncludeMe
+        if restart { use(.voice) }
     }
 
     func setLanguages(spoken: AppLanguage, target: AppLanguage) {
