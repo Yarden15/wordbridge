@@ -2,88 +2,113 @@
 
 ## Goals
 
-1. Free for the user, forever. No paid API keys.
-2. Fully local and private.
-3. Light on memory and CPU: heavy work happens only when the user actually needs it.
+1. Free for the user. The default needs no account and no API key.
+2. Private by default: a local model; online models only if the user opts in.
+3. Light on memory and CPU: heavy work happens only when the user actually asks for it.
 
-## Components
+## What's built and what's planned
 
-| Component | Tech | Notes |
+| Area | Status | Tech |
 |---|---|---|
-| App shell | Swift + SwiftUI, menu-bar app (`LSUIElement`) | Launch at login via `SMAppService` |
-| Text field access | Accessibility API (`AXUIElement`, `AXObserver`) | Reads focused field, selection, word bounds. Skips `AXSecureTextField`. |
-| Overlay UI | Borderless `NSPanel` windows | Underlines, suggestion popover, word tooltip, translation window |
-| Global hotkey | `RegisterEventHotKey` (Carbon) | `⌘⇧⌥T` → translate selection |
-| Spell check | `NSSpellChecker` (built into macOS) | Instant, zero extra memory, always on |
-| Translation | Apple Translation framework (on-device) | Free, offline, managed by macOS — zero memory when idle. Hebrew ⇄ English supported. |
-| Grammar / context | Small local LLM (≈1–4B params, 4-bit quantized) via llama.cpp or MLX | Loaded on demand only |
-| Learning data | SQLite (local) | Looked-up words, review schedule |
-| Captions (later) | `ScreenCaptureKit` audio + on-device speech-to-text | Works with any meeting app |
+| Menu-bar app shell | Built | Swift + SwiftUI/AppKit, `LSUIElement`; launch at login via `SMAppService` |
+| Global shortcuts | Built | Carbon `RegisterEventHotKey`: `⌘⇧⌥T` translate, `⌘⇧⌥F` improve |
+| Reading the selection | Built | Accessibility (`kAXSelectedTextAttribute`), falling back to a simulated `⌘C` with the clipboard restored |
+| Replacing the selection | Built | Paste (`⌘V`) into the original app, clipboard restored afterwards |
+| Assistant window | Built | Non-activating, resizable `NSPanel` hosting SwiftUI; Translate / Improve tabs; word by word |
+| Translation, writing check, word meanings | Built | One LLM, through a local `llama-server` or Google Gemini |
+| Fix as you type | Planned | `NSSpellChecker` (instant) + LLM on pause, underline overlays |
+| Learning / review | Planned | SQLite of looked-up words, spaced repetition |
+| Meeting captions | Planned | `ScreenCaptureKit` audio + on-device speech-to-text |
 
-## Tiered engine: cheapest tool first
+## Source layout
 
-Every request goes to the cheapest engine that can answer it:
+| File | Responsibility |
+|---|---|
+| `AppDelegate.swift` | Menu, shortcuts, model menu, Gemini key dialog |
+| `AssistantPanel.swift` | `AssistantModel` (state per selection), all SwiftUI views, `AssistantPanelController` (window) |
+| `AI.swift` | `AI.complete` / `AI.json` — routes every request to the selected backend; `Translator` |
+| `WritingAssistant.swift` | Writing-check prompt and `Suggestion`s; word-by-word `Glossary` |
+| `WordTokens.swift` | Splitting text into words, word-level diff for highlighting, `FlowLayout` |
+| `LLMEngine.swift` | Local `llama-server` process lifecycle |
+| `CloudEngine.swift` | `Backend` choice, `GeminiEngine`, Keychain storage for the key |
+| `ModelLocator.swift` | Finding model files and `llama-server` |
+| `SelectionReader.swift` | Reading and replacing selected text |
+| `Languages.swift` | Languages and direction detection |
 
-1. **Tier 0 — always on, ~0 cost:** `NSSpellChecker` for spelling and basic capitalization.
-   Runs on every pause in typing.
-2. **Tier 1 — on demand, light:** Apple's on-device translation. Used when the user translates
-   or hovers a word.
-3. **Tier 2 — on demand, heavier:** LLM for grammar and context-aware meaning.
-   Called only when:
-   - the user stops typing for ~800 ms **and** the sentence is complete (ends with `.?!` or a newline), or
-   - the user explicitly asks (clicks "Improve" / opens a word tooltip that needs context).
+## Backends
 
-## Model lifecycle (the "only when needed" rule)
+All features use one chat-completion call (OpenAI-compatible API on both backends), so
+adding a feature means writing a prompt, not engine code.
+
+- **Local (default).** `llama-server` from llama.cpp, started as a child process on a free
+  localhost port, with the model on the GPU (`-ngl 99`). Thinking is turned off with
+  `chat_template_kwargs.enable_thinking = false`.
+- **Google Gemini (opt-in).** The user's own key, kept in the Keychain. Default model
+  `gemini-3.5-flash` with `reasoning_effort: "low"` (≈1 s per request). If it's busy (5xx/429),
+  slow (12 s timeout) or missing, the request is retried on `gemini-flash-lite-latest`.
+  Learned the hard way: `reasoning_effort: "none"` made some models hang, `gemini-flash-latest`
+  pointed at an overloaded model, and `max_tokens` counts thinking tokens on Gemini, so it isn't sent.
+
+Structured answers (writing check, word meanings) are requested as JSON in the prompt;
+`AI.json` decodes the outermost `{…}`/`[…]` in the reply, since models sometimes add prose or fences.
+
+## Features
+
+**Translate.** Direction from the script: more Hebrew letters → English, otherwise → Hebrew.
+
+**Improve.** Returns `{ok, suggestions: [{text, explanation}]}`: a minimal correction and a more
+natural version, with a short Hebrew explanation. Suggestions identical to the input or to each
+other are dropped. Changed words are found with a word-level LCS diff against the original.
+
+**Word by word.** The text is split into whitespace-separated tokens and sent numbered; the model
+returns, per word, its meaning in context plus the idiom or phrasal verb it belongs to (if any).
+Results are cached per text. Hover state lives in its own `WordFocus` object so moving the mouse
+doesn't re-render or re-measure the whole window.
+
+**Mixed Hebrew/English text.** macOS picks a paragraph's direction from its first letter, so Hebrew
+that starts with an English word gets scrambled. Each paragraph is prefixed with an invisible
+RLM/LRM mark for its language.
+
+## Local model lifecycle (the "only when needed" rule)
 
 ```
- idle ──request──▶ loading ──▶ ready ──no requests for N min──▶ unloaded
-                                 ▲                                   │
-                                 └──────────── next request ◀────────┘
+ unloaded ──request──▶ loading ──▶ ready ──no requests for N min──▶ unloaded
+                                     ▲                                   │
+                                     └──────────── next request ◀────────┘
 ```
 
-- **Lazy load:** no model is in memory at app start.
-- **Idle unload:** after `N` minutes without requests (default 5, configurable) the model is freed.
-- **Memory pressure:** listen to `DispatchSource.makeMemoryPressureSource`; on `.warning` / `.critical`
-  unload immediately.
-- **Battery:** on low-power mode, use Tier 0 only unless the user explicitly asks.
-- **One at a time:** at most one heavy model resident; requests are queued and debounced,
-  stale requests (text changed since) are cancelled.
-- **Separate process (planned):** run inference in a helper process (XPC). Killing it returns
-  all memory to the OS and a crash never takes down the main app.
+- **Lazy load:** nothing is loaded at app start.
+- **Idle unload:** after 5 minutes without requests, or 30 minutes when the model is on an external
+  drive (`/Volumes/…`), where loading is slow.
+- **Memory pressure:** unload on *critical* pressure only, and never in the middle of a load or a
+  request. (Loading a multi-GB model triggers a *warning* by itself; unloading then would cancel
+  the load and leave the user waiting forever.)
+- **Drive unplugged:** `NSWorkspace.didUnmountNotification` stops the server and shows an error.
+- **Crash recovery:** the server's PID is stored; on launch an *orphaned* `llama-server`
+  (parent PID 1) is killed. A server owned by another running instance is left alone.
+- **Progress:** load time is remembered per model file and shown as a progress bar.
 
-## Model download
+### Models on a slow external drive
 
-Models are **not** bundled in the installer (keeps the download small and lets users choose).
-On first launch an onboarding screen downloads the default models into
-`~/Library/Application Support/Wordbridge/Models`, with size shown up front and checksum verification.
-Models must have a license that allows free redistribution and use.
+Measured from a USB HDD: Gemma 4 E4B ≈ 175 s to load, Gemma 4 E2B ≈ 88 s. macOS doesn't keep the
+file cached, so every reload pays this again. On a 16 GB Mac the larger model also pushed other
+apps into swap (its GPU memory is wired and can't be swapped), which is why E2B is the suggested
+choice there.
 
-**Models on an external drive.** The models folder is configurable, so models (and the
-`llama-server` binary) can live on an external disk. Slow USB drives make loading take minutes
-(measured: ~190 s for Gemma 4 E4B from a USB HDD vs. seconds from the internal SSD), so the app must:
+## Model choice
 
-- Warm up early: start loading as soon as the user opens a tooltip / translation panel or focuses a
-  text field after a pause, not on the first actual request.
-- Use a longer idle timeout when the model lives on a slow drive (e.g. 30 min instead of 5).
-- Show clear progress ("Loading model… 40%") instead of a silent spinner.
-- Detect when the drive is unmounted (`NSWorkspace.didUnmountNotification`): stop the server,
-  fall back to Tier 0 (spell check) and tell the user, rather than failing requests.
-
-Candidates to evaluate (pick by Hebrew quality vs. size at implementation time):
-
-- Translation: Helsinki-NLP Opus-MT `en-he` / `he-en` (Marian, CC-BY 4.0)
-- LLM (chosen after benchmarking, see `tools/model-bench/results.md`): **Gemma 4 E4B** Q4_K_M (5 GB, Apache-2.0)
-  as default, **Gemma 4 E2B** Q4_K_M (3.1 GB) as a lighter option. Runs via llama.cpp `llama-server`.
-- Optional: Apple Foundation Models (macOS 26+) when available — zero download, if language support fits.
+Benchmarked in `tools/model-bench` (translation both ways, word in context, grammar):
+**Gemma 4 E4B** Q4_K_M (Apache-2.0) has the best Hebrew; **Gemma 4 E2B** is close and much lighter.
+Qwen 3.5 (2B/4B) had weak Hebrew; TranslateGemma translated the instructions instead of the text.
 
 ## Distribution
 
 Wordbridge is a personal project shared as open source. There is no store listing and no
-official installer: anyone who wants it clones the repo and builds it locally.
+official installer: anyone who wants it clones the repo and builds it locally (`make install`).
 
 - No paid Apple Developer account and no notarization needed — apps you build yourself run fine.
-- The app is signed locally with a stable identity (a free Apple ID "Apple Development"
-  certificate, or a self-signed code-signing certificate). This matters: macOS ties the
-  Accessibility permission to the signature, and an unsigned/ad-hoc build loses the permission
-  on every rebuild.
-- A `make install` style script will build the app and copy it to `/Applications`.
+- The app is signed with a stable identity (a free Apple ID "Apple Development" certificate) when
+  available. macOS ties the Accessibility permission to the signature, so an ad-hoc build loses
+  the permission on every rebuild.
+- Building uses Command Line Tools only (`swift build --build-system native`). Without Xcode, the
+  SwiftUI macro plugin is missing, so views use `ObservableObject` instead of `@State`.
