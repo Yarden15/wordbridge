@@ -18,6 +18,16 @@ Everything runs **on your Mac**. No account, no subscription, no text sent to a 
 
 Languages: Hebrew ⇄ English first. More languages later.
 
+## Why
+
+A personal tool I'm building to learn English properly and work faster.
+It's open source so anyone who finds it useful can build and use it — free, no strings attached.
+
+## Install
+
+There is no store version or installer. Clone the repo and build it yourself
+(build instructions will be added once the app is runnable).
+
 ## Requirements
 
 - macOS 14 or later, Apple Silicon recommended

@@ -67,5 +67,12 @@ Candidates to evaluate (pick by Hebrew quality vs. size at implementation time):
 
 ## Distribution
 
-Signed + notarized `.dmg` from GitHub Releases (not the Mac App Store — the sandbox blocks
-reading other apps' text fields).
+Wordbridge is a personal project shared as open source. There is no store listing and no
+official installer: anyone who wants it clones the repo and builds it locally.
+
+- No paid Apple Developer account and no notarization needed — apps you build yourself run fine.
+- The app is signed locally with a stable identity (a free Apple ID "Apple Development"
+  certificate, or a self-signed code-signing certificate). This matters: macOS ties the
+  Accessibility permission to the signature, and an unsigned/ad-hoc build loses the permission
+  on every rebuild.
+- A `make install` style script will build the app and copy it to `/Applications`.
