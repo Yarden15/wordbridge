@@ -15,7 +15,7 @@
 | Overlay UI | Borderless `NSPanel` windows | Underlines, suggestion popover, word tooltip, translation window |
 | Global hotkey | `RegisterEventHotKey` (Carbon) | `⌘⇧⌥T` → translate selection |
 | Spell check | `NSSpellChecker` (built into macOS) | Instant, zero extra memory, always on |
-| Translation | Small dedicated MT models (e.g. Opus-MT he↔en, ~300 MB each) | Fast on CPU, loaded on demand |
+| Translation | Apple Translation framework (on-device) | Free, offline, managed by macOS — zero memory when idle. Hebrew ⇄ English supported. |
 | Grammar / context | Small local LLM (≈1–4B params, 4-bit quantized) via llama.cpp or MLX | Loaded on demand only |
 | Learning data | SQLite (local) | Looked-up words, review schedule |
 | Captions (later) | `ScreenCaptureKit` audio + on-device speech-to-text | Works with any meeting app |
@@ -26,7 +26,7 @@ Every request goes to the cheapest engine that can answer it:
 
 1. **Tier 0 — always on, ~0 cost:** `NSSpellChecker` for spelling and basic capitalization.
    Runs on every pause in typing.
-2. **Tier 1 — on demand, light:** translation model. Loaded the first time the user translates
+2. **Tier 1 — on demand, light:** Apple's on-device translation. Used when the user translates
    or hovers a word.
 3. **Tier 2 — on demand, heavier:** LLM for grammar and context-aware meaning.
    Called only when:

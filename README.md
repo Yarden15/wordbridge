@@ -25,8 +25,26 @@ It's open source so anyone who finds it useful can build and use it — free, no
 
 ## Install
 
-There is no store version or installer. Clone the repo and build it yourself
-(build instructions will be added once the app is runnable).
+There is no store version or installer. Clone the repo and build it yourself:
+
+```bash
+make install   # builds, signs and copies Wordbridge.app to /Applications
+make run       # or: build and run from ./build without installing
+```
+
+Needs Xcode or the Xcode Command Line Tools (`xcode-select --install`).
+
+The build is signed with your "Apple Development" certificate if you have one
+(free with any Apple ID: Xcode › Settings › Accounts). Without it the app is ad-hoc
+signed and macOS will ask for Accessibility access again after every rebuild.
+
+On first launch, allow Wordbridge in **System Settings › Privacy & Security › Accessibility**.
+
+## Usage
+
+- **Translate selection:** select text in any app and press `⌘⇧⌥T`.
+  Hebrew is translated to English, anything else to Hebrew. The first time, macOS
+  asks to download the language pack (on-device, free).
 
 ## Requirements
 

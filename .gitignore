@@ -16,3 +16,4 @@ Models/
 *.safetensors
 *.mlpackage
 *.mlmodelc
+build/
