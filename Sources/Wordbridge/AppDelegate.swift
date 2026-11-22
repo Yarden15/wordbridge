@@ -26,6 +26,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
 
         Accessibility.requestIfNeeded()
+
+        // Developer aid: `open Wordbridge.app --args --show "some text"` opens the panel directly.
+        let args = CommandLine.arguments
+        if let flag = args.firstIndex(of: "--show"), flag + 1 < args.count, let screen = NSScreen.main {
+            let center = NSPoint(x: screen.visibleFrame.midX - 200, y: screen.visibleFrame.midY + 150)
+            translationPanel.show(text: args[flag + 1], near: center)
+        }
     }
 
     // MARK: - Menu bar

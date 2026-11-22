@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import SwiftUI
 
 // MARK: - Translator
@@ -72,20 +73,37 @@ final class TranslationModel: ObservableObject {
 struct TranslationView: View {
     @ObservedObject var model: TranslationModel
     @ObservedObject var engine = LLMEngine.shared
+    /// When true, lays out at natural height with no scrolling — used only to measure how tall
+    /// the panel should be to fit the text.
+    var measuring = false
     let onClose: () -> Void
 
     var body: some View {
+        if measuring {
+            VStack(alignment: .leading, spacing: 10) {
+                header
+                content
+            }
+            .padding(14)
+        } else {
+            // Flexible in both directions so the window can be resized freely; long text scrolls.
+            VStack(alignment: .leading, spacing: 10) {
+                header
+                ScrollView { content.padding(.trailing, 6) }
+            }
+            .padding(14)
+            .frame(minWidth: 300, maxWidth: .infinity, minHeight: 100, maxHeight: .infinity, alignment: .topLeading)
+        }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 10) {
-            header
-            directional(Text(model.text), language: model.source)
+            directional(model.text, language: model.source)
                 .font(.callout)
                 .foregroundStyle(.secondary)
-                .lineLimit(6)
             Divider()
             resultArea
         }
-        .padding(14)
-        .frame(width: 400, alignment: .leading)
     }
 
     private var header: some View {
@@ -109,7 +127,7 @@ struct TranslationView: View {
     @ViewBuilder
     private var resultArea: some View {
         if let result = model.result {
-            directional(Text(result), language: model.target)
+            directional(result, language: model.target)
                 .font(.title3)
                 .textSelection(.enabled)
         } else if let error = model.errorMessage {
@@ -140,11 +158,22 @@ struct TranslationView: View {
         }
     }
 
-    private func directional(_ text: Text, language: AppLanguage) -> some View {
-        text
+    /// Lays out text in its language's direction, even when it mixes Hebrew and English.
+    ///
+    /// macOS picks each paragraph's direction from its first letter, so a Hebrew sentence that starts
+    /// with an English word ("Gemini עובד עכשיו…") would be laid out left-to-right and come out scrambled.
+    /// Starting every paragraph with an invisible direction mark (RLM/LRM) fixes the order.
+    private func directional(_ string: String, language: AppLanguage) -> some View {
+        let mark = language.isRightToLeft ? "\u{200F}" : "\u{200E}"
+        let marked = string
+            .components(separatedBy: "\n")
+            .map { mark + $0 }
+            .joined(separator: "\n")
+        let alignment: Alignment = language.isRightToLeft ? .trailing : .leading
+        return Text(verbatim: marked)
             .multilineTextAlignment(language.isRightToLeft ? .trailing : .leading)
-            .frame(maxWidth: .infinity, alignment: language.isRightToLeft ? .trailing : .leading)
-            .environment(\.layoutDirection, language.isRightToLeft ? .rightToLeft : .leftToRight)
+            .frame(maxWidth: .infinity, alignment: alignment)
+            .environment(\.layoutDirection, .leftToRight) // keep "trailing" = right edge
             .fixedSize(horizontal: false, vertical: true)
     }
 }
@@ -163,6 +192,12 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
     private var panel: FloatingPanel?
     private var outsideClickMonitor: Any?
     private var model: TranslationModel?
+    private var hosting: NSHostingController<TranslationView>?
+    private var changeObservers: [AnyCancellable] = []
+    /// Until the user resizes the panel, its height follows the text. After that, the user's size wins.
+    private var userSized = false
+    private static let sizeKey = "translationPanelSize"
+    private static let defaultWidth: CGFloat = 420
 
     func show(text: String, near point: NSPoint) {
         panel?.close()
@@ -172,11 +207,14 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
         let hosting = NSHostingController(rootView: TranslationView(model: model) { [weak self] in
             self?.panel?.close()
         })
-        hosting.sizingOptions = [.preferredContentSize]
+        hosting.sizingOptions = [] // we size the window ourselves, so it stays resizable
+        self.hosting = hosting
+        let savedSize = NSSizeFromString(UserDefaults.standard.string(forKey: Self.sizeKey) ?? "")
+        userSized = savedSize.width >= 300 && savedSize.height >= 100
 
         let panel = FloatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 400, height: 160),
-            styleMask: [.nonactivatingPanel, .titled, .closable, .fullSizeContentView],
+            contentRect: NSRect(x: 0, y: 0, width: Self.defaultWidth, height: 160),
+            styleMask: [.nonactivatingPanel, .titled, .closable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -193,11 +231,37 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.delegate = self
 
-        panel.setContentSize(hosting.view.fittingSize)
+        panel.contentMinSize = NSSize(width: 300, height: 100)
+        panel.setContentSize(userSized ? savedSize : fittingSize(width: Self.defaultWidth, on: point))
         panel.setFrameOrigin(origin(for: panel.frame.size, near: point))
         panel.makeKeyAndOrderFront(nil)
         self.panel = panel
         startOutsideClickMonitor(for: model)
+
+        // Grow or shrink to fit as the translation arrives (until the user picks a size).
+        changeObservers = [model.objectWillChange.eraseToAnyPublisher(), LLMEngine.shared.objectWillChange.eraseToAnyPublisher()]
+            .map { $0.receive(on: RunLoop.main).sink { [weak self] _ in self?.fitToContent() } }
+    }
+
+    /// The height the panel needs to show all its text at a given width, capped to most of the screen.
+    private func fittingSize(width: CGFloat, on point: NSPoint) -> NSSize {
+        guard let model else { return NSSize(width: width, height: 160) }
+        let measure = NSHostingView(rootView: TranslationView(model: model, measuring: true, onClose: {}))
+        measure.frame.size.width = width
+        let natural = measure.fittingSize.height
+        let screen = NSScreen.screens.first { $0.frame.contains(point) } ?? NSScreen.main
+        let maxHeight = (screen?.visibleFrame.height ?? 800) * 0.6
+        return NSSize(width: width, height: min(max(natural, 100), maxHeight))
+    }
+
+    private func fitToContent() {
+        guard !userSized, let panel, !panel.inLiveResize else { return }
+        let current = panel.contentRect(forFrameRect: panel.frame)
+        let size = fittingSize(width: current.width, on: NSPoint(x: panel.frame.midX, y: panel.frame.midY))
+        guard abs(size.height - current.height) > 1 else { return }
+        var frame = panel.frameRect(forContentRect: NSRect(origin: current.origin, size: size))
+        frame.origin.y = panel.frame.maxY - frame.height // keep the top edge in place
+        panel.setFrame(frame, display: true, animate: false)
     }
 
     /// Places the panel just below-right of the cursor, kept fully on screen.
@@ -229,10 +293,24 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
         outsideClickMonitor = nil
     }
 
+    /// Once the user resizes the panel, stop auto-fitting and keep their size.
+    func windowWillStartLiveResize(_ notification: Notification) {
+        userSized = true
+    }
+
+    /// Remembers the size, so the next panel opens the same size.
+    func windowDidEndLiveResize(_ notification: Notification) {
+        guard let panel else { return }
+        let size = panel.contentRect(forFrameRect: panel.frame).size
+        UserDefaults.standard.set(NSStringFromSize(size), forKey: Self.sizeKey)
+    }
+
     func windowWillClose(_ notification: Notification) {
         stopOutsideClickMonitor()
         model?.cancel()
+        changeObservers = []
         model = nil
+        hosting = nil
         panel = nil
     }
 }
