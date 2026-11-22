@@ -8,6 +8,14 @@ enum AppLanguage: String, CaseIterable {
     var locale: Locale.Language { Locale.Language(identifier: rawValue) }
     var isRightToLeft: Bool { self == .hebrew }
 
+    /// Name used in prompts to the language model.
+    var englishName: String {
+        switch self {
+        case .english: "English"
+        case .hebrew: "Hebrew"
+        }
+    }
+
     var displayName: String {
         switch self {
         case .english: "English"

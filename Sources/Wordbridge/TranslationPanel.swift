@@ -1,6 +1,16 @@
 import AppKit
 import SwiftUI
-import Translation
+
+// MARK: - Translator
+
+enum Translator {
+    static func translate(_ text: String, from source: AppLanguage, to target: AppLanguage) async throws -> String {
+        let system = "You are a professional translator. Translate the user's text from \(source.englishName) "
+            + "to \(target.englishName). Keep the meaning, tone and formatting. "
+            + "Output only the translation, nothing else."
+        return try await LLMEngine.shared.complete(system: system, user: text, maxTokens: max(200, text.count * 3))
+    }
+}
 
 // MARK: - Model
 
@@ -11,7 +21,7 @@ final class TranslationModel: ObservableObject {
     @Published private(set) var target: AppLanguage
     @Published var result: String?
     @Published var errorMessage: String?
-    @Published var configuration: TranslationSession.Configuration?
+    private var task: Task<Void, Never>?
 
     init(text: String) {
         self.text = text
@@ -24,11 +34,25 @@ final class TranslationModel: ObservableObject {
         start()
     }
 
+    func cancel() {
+        task?.cancel()
+    }
+
     private func start() {
+        task?.cancel()
         result = nil
         errorMessage = nil
-        // A new configuration makes `.translationTask` run again.
-        configuration = TranslationSession.Configuration(source: source.locale, target: target.locale)
+        let (text, source, target) = (text, source, target)
+        task = Task {
+            do {
+                let translation = try await Translator.translate(text, from: source, to: target)
+                guard !Task.isCancelled else { return }
+                result = translation
+            } catch {
+                guard !Task.isCancelled, !(error is CancellationError) else { return }
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
     func copyResult() {
@@ -42,6 +66,7 @@ final class TranslationModel: ObservableObject {
 
 struct TranslationView: View {
     @ObservedObject var model: TranslationModel
+    @ObservedObject var engine = LLMEngine.shared
     let onClose: () -> Void
 
     var body: some View {
@@ -56,15 +81,6 @@ struct TranslationView: View {
         }
         .padding(14)
         .frame(width: 400, alignment: .leading)
-        .translationTask(model.configuration) { session in
-            do {
-                // Apple's on-device translation. The first time, macOS asks to download the language pack.
-                let response = try await session.translate(model.text)
-                await MainActor.run { model.result = response.targetText }
-            } catch {
-                await MainActor.run { model.errorMessage = error.localizedDescription }
-            }
-        }
     }
 
     private var header: some View {
@@ -95,10 +111,26 @@ struct TranslationView: View {
             Label(error, systemImage: "exclamationmark.triangle")
                 .font(.callout)
                 .foregroundStyle(.red)
+                .fixedSize(horizontal: false, vertical: true)
+        } else if case .loading(let started) = engine.state {
+            loadingProgress(started: started)
         } else {
             HStack(spacing: 8) {
                 ProgressView().controlSize(.small)
                 Text("Translating…").font(.callout).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    /// The model can take a while to load (minutes from a slow external drive), so show real progress.
+    private func loadingProgress(started: Date) -> some View {
+        TimelineView(.periodic(from: .now, by: 0.5)) { context in
+            let elapsed = context.date.timeIntervalSince(started)
+            VStack(alignment: .leading, spacing: 6) {
+                ProgressView(value: min(elapsed / engine.expectedLoadSeconds, 0.97))
+                Text("Loading language model… \(Int(elapsed))s of ~\(Int(engine.expectedLoadSeconds))s")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -125,11 +157,13 @@ private final class FloatingPanel: NSPanel {
 final class TranslationPanelController: NSObject, NSWindowDelegate {
     private var panel: FloatingPanel?
     private var outsideClickMonitor: Any?
+    private var model: TranslationModel?
 
     func show(text: String, near point: NSPoint) {
         panel?.close()
 
         let model = TranslationModel(text: text)
+        self.model = model
         let hosting = NSHostingController(rootView: TranslationView(model: model) { [weak self] in
             self?.panel?.close()
         })
@@ -192,6 +226,8 @@ final class TranslationPanelController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         stopOutsideClickMonitor()
+        model?.cancel()
+        model = nil
         panel = nil
     }
 }

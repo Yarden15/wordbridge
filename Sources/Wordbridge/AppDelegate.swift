@@ -1,6 +1,7 @@
 import AppKit
 import Carbon
 import ServiceManagement
+import UniformTypeIdentifiers
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
@@ -10,6 +11,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private let accessibilityItem = NSMenuItem()
     private let launchAtLoginItem = NSMenuItem()
+    private let modelStatusItem = NSMenuItem()
+    private let unloadModelItem = NSMenuItem()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setUpStatusItem()
@@ -43,6 +46,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         menu.addItem(.separator())
 
+        modelStatusItem.isEnabled = false
+        menu.addItem(modelStatusItem)
+
+        unloadModelItem.title = "Unload Model Now"
+        unloadModelItem.target = self
+        unloadModelItem.action = #selector(unloadModel)
+        menu.addItem(unloadModelItem)
+
+        let chooseModel = NSMenuItem(title: "Choose Model File…", action: #selector(chooseModelFile), keyEquivalent: "")
+        chooseModel.target = self
+        menu.addItem(chooseModel)
+
+        menu.addItem(.separator())
+
         accessibilityItem.target = self
         accessibilityItem.action = #selector(openAccessibilitySettings)
         menu.addItem(accessibilityItem)
@@ -64,6 +81,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : "Grant Accessibility Access…"
         accessibilityItem.state = Accessibility.isTrusted ? .on : .off
         launchAtLoginItem.state = SMAppService.mainApp.status == .enabled ? .on : .off
+
+        let engine = LLMEngine.shared
+        let name = engine.modelName ?? "none found"
+        let status: String
+        switch engine.state {
+        case .unloaded: status = "not loaded"
+        case .loading: status = "loading…"
+        case .ready: status = "ready"
+        case .failed: status = "error"
+        }
+        modelStatusItem.title = "Model: \(name) — \(status)"
+        unloadModelItem.isEnabled = engine.state != .unloaded
     }
 
     // MARK: - Actions
@@ -81,6 +110,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             translationPanel.show(text: text.trimmingCharacters(in: .whitespacesAndNewlines), near: mouse)
         }
+    }
+
+    @objc private func unloadModel() {
+        LLMEngine.shared.unload()
+    }
+
+    @objc private func chooseModelFile() {
+        let panel = NSOpenPanel()
+        panel.title = "Choose a GGUF language model"
+        panel.allowedContentTypes = [UTType(filenameExtension: "gguf") ?? .data]
+        panel.allowsMultipleSelection = false
+        NSApp.activate()
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        UserDefaults.standard.set(url.path, forKey: ModelLocator.modelPathKey)
+        LLMEngine.shared.unload() // the next request loads the new model
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        LLMEngine.shared.unload()
     }
 
     @objc private func openAccessibilitySettings() {
