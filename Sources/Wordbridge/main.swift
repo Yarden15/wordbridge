@@ -60,6 +60,41 @@ MainActor.assumeIsolated {
         RunLoop.main.run()
     }
 
+    // Developer self-test for voice recognition: listens to all sound on the Mac (or, with `mic`,
+    // the microphone) for N seconds and writes what it heard to a file.
+    //   open Wordbridge.app --args --listen 30 /tmp/heard.txt [en|he] [mic]
+    // Launch with `open` so the app's own permissions apply.
+    if let flag = args.firstIndex(of: "--listen"), flag + 2 < args.count, #available(macOS 26, *) {
+        let seconds = Double(args[flag + 1]) ?? 20
+        let output = args[flag + 2]
+        var log: [String] = []
+        let language = AppLanguage(rawValue: args.dropFirst(flag + 3).first ?? "") ?? .english
+        let input: MeetingListener.Input = args.contains("mic") ? .microphone : .app(nil)
+        let listener = MeetingListener(input: input, language: language) { event in
+            switch event {
+            case .status(let text): log.append("status: \(text)")
+            case .partial: break
+            case .final(let text): log.append("heard: \(text)")
+            case .failed(let text): log.append("failed: \(text)")
+            }
+            try? log.joined(separator: "\n").write(toFile: output, atomically: true, encoding: .utf8)
+        }
+        Task { @MainActor in
+            await listener.start()
+            try? await Task.sleep(for: .seconds(seconds))
+            listener.stop()
+            log.append("done")
+            try? log.joined(separator: "\n").write(toFile: output, atomically: true, encoding: .utf8)
+            exit(0)
+        }
+        RunLoop.main.run()
+    }
+
+    if let flag = args.firstIndex(of: "--ax-dump"), flag + 2 < args.count {
+        AXDump.run(bundleID: args[flag + 1], output: args[flag + 2])
+        RunLoop.main.run()
+    }
+
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate

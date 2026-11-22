@@ -6,6 +6,13 @@ enum AppLanguage: String, CaseIterable {
     case hebrew = "he"
 
     var locale: Locale.Language { Locale.Language(identifier: rawValue) }
+    /// The locale used for speech recognition.
+    var speechLocale: Locale {
+        switch self {
+        case .english: Locale(identifier: "en-US")
+        case .hebrew: Locale(identifier: "he-IL")
+        }
+    }
     var isRightToLeft: Bool { self == .hebrew }
 
     /// Name used in prompts to the language model.

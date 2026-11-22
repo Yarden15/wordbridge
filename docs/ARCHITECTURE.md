@@ -18,7 +18,8 @@
 | Translation, writing check, word meanings | Built | One LLM, through a local `llama-server` or Google Gemini |
 | Fix as you type | Planned | `NSSpellChecker` (instant) + LLM on pause, underline overlays |
 | Learning / review | Planned | SQLite of looked-up words, spaced repetition |
-| Meeting captions | Planned | `ScreenCaptureKit` audio + on-device speech-to-text |
+| Meeting translation | Built | Captions via Accessibility (Meet, Zoom transcript), or a Core Audio process tap + `SpeechTranscriber` |
+| Settings window | Planned | Meeting source, languages |
 
 ## Source layout
 
@@ -34,6 +35,10 @@
 | `ModelLocator.swift` | Finding model files and `llama-server` |
 | `SelectionReader.swift` | Reading and replacing selected text |
 | `Languages.swift` | Languages and direction detection |
+| `MeetingTranslator.swift` | `MeetingSession` (lines, when a line is finished, translation queue), meeting window |
+| `MeetingCaptions.swift` | Finding the meeting (`MeetingApp`), reading Meet/Zoom captions (`CaptionReader`), `AXTree` helpers |
+| `MeetingAudio.swift` | `MeetingListener`: process tap on the meeting app's audio → `SpeechAnalyzer` |
+| `AXDump.swift` | Developer tool: dumps an app's accessibility tree (`--ax-dump`) |
 
 ## Backends
 
@@ -68,6 +73,30 @@ doesn't re-render or re-measure the whole window.
 **Mixed Hebrew/English text.** macOS picks a paragraph's direction from its first letter, so Hebrew
 that starts with an English word gets scrambled. Each paragraph is prefixed with an invisible
 RLM/LRM mark for its language.
+
+**Meeting translation.** Two sources feed the same `MeetingSession`:
+
+- *Captions*, polled every 0.5 s through Accessibility. Google Meet exposes a "Captions" landmark
+  region (one group per speaker turn: name, then one static text per sentence); Chromium builds the
+  web tree only after `AXManualAccessibility` is set on the app. Zoom draws its caption overlay as
+  an image, but its **Transcript** panel is a table: rows of `[avatar, name]` or `[time, text]`.
+  The table is found by its time-stamped rows, not by its (localized) label.
+- *Voice*: a Core Audio process tap (`CATapDescription`, macOS 14.2+) on the meeting app's
+  processes, found by bundle-ID prefix (Chrome's sound comes from its helper), or on all output
+  if none are found. The tap is unmuted and private, read through a private aggregate device,
+  converted to the analyzer's format and fed to `SpeechTranscriber` (macOS 26, on-device), whose
+  final results are sentence-sized. Only the other side is heard: the tap sees what the app plays,
+  not the microphone.
+  English uses `SpeechTranscriber`; it has no Hebrew, so Hebrew uses `DictationTranscriber`.
+  With **Me** on, a second listener runs on the microphone (`AVAudioEngine` input tap; the
+  hardened runtime needs the `com.apple.security.device.audio-input` entitlement).
+- Translation always goes into the chosen target language; a line already in that language
+  (detected from its script) is shown as is.
+
+Caption lines grow and get corrected while someone speaks. A line counts as finished when a newer
+line follows it or it hasn't changed for 1.5 s; only then is it translated (up to three at a time,
+with the previous three lines as context). Lines are matched across polls by Zoom's timestamp, or
+by speaker and shared prefix for Meet.
 
 ## Local model lifecycle (the "only when needed" rule)
 

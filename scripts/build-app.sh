@@ -26,5 +26,5 @@ if [ -z "$IDENTITY" ]; then
   echo "warning: no signing identity found, using ad-hoc signing." >&2
   echo "         Accessibility permission will need to be re-granted after each rebuild." >&2
 fi
-codesign --force --options runtime --sign "$IDENTITY" "$APP"
+codesign --force --options runtime --entitlements Support/Wordbridge.entitlements --sign "$IDENTITY" "$APP"
 echo "Built $APP"

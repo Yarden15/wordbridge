@@ -8,7 +8,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var translateHotKey: HotKey?
     private var improveHotKey: HotKey?
+    private var meetingHotKey: HotKey?
     private let assistantPanel = AssistantPanelController()
+    private let meetingPanel = MeetingPanelController()
+    private let meetingItem = NSMenuItem()
+    private let meetingSourceItem = NSMenuItem()
 
     private let accessibilityItem = NSMenuItem()
     private let launchAtLoginItem = NSMenuItem()
@@ -32,10 +36,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             self?.improveSelection()
         }
 
+        // ⌘⇧⌥M — live translation of the meeting you're in.
+        meetingHotKey = HotKey(
+            id: 3, keyCode: kVK_ANSI_M, modifiers: cmdKey | shiftKey | optionKey
+        ) { [weak self] in
+            self?.toggleMeeting()
+        }
+
         Accessibility.requestIfNeeded()
 
-        // Developer aid: `open Wordbridge.app --args --show "text"` (or `--improve "text"`) opens the panel directly.
+        // Developer aid: `open Wordbridge.app --args --show "text"` (or `--improve "text"`) opens the panel directly;
+        // `--meeting` opens meeting translation.
         let args = CommandLine.arguments
+        if args.contains("--meeting") { meetingPanel.show() }
         for (flag, mode) in [("--show", AssistantMode.translate), ("--improve", .improve)] {
             if let index = args.firstIndex(of: flag), index + 1 < args.count, let screen = NSScreen.main {
                 let center = NSPoint(x: screen.visibleFrame.midX - 230, y: screen.visibleFrame.midY + 200)
@@ -65,6 +78,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         improve.keyEquivalentModifierMask = [.command, .shift, .option]
         improve.target = self
         menu.addItem(improve)
+
+        meetingItem.title = "Translate Meeting"
+        meetingItem.action = #selector(toggleMeeting)
+        meetingItem.keyEquivalent = "m"
+        meetingItem.keyEquivalentModifierMask = [.command, .shift, .option]
+        meetingItem.target = self
+        menu.addItem(meetingItem)
+
+        meetingSourceItem.title = "Meeting Text From"
+        meetingSourceItem.submenu = NSMenu()
+        menu.addItem(meetingSourceItem)
 
         menu.addItem(.separator())
 
@@ -118,6 +142,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             : "Model: \(name) — \(status)"
         unloadModelItem.isEnabled = engine.state != .unloaded
         rebuildModelMenu()
+
+        meetingItem.title = meetingPanel.isOpen ? "Stop Meeting Translation" : "Translate Meeting"
+        if let submenu = meetingSourceItem.submenu {
+            submenu.removeAllItems()
+            for source in MeetingSource.allCases {
+                let item = NSMenuItem(title: source.menuTitle, action: #selector(selectMeetingSource(_:)), keyEquivalent: "")
+                item.target = self
+                item.representedObject = source.rawValue
+                item.state = MeetingSource.preferred == source ? .on : .off
+                switch source {
+                case .automatic: item.subtitle = "Captions when they're on, otherwise voice recognition"
+                case .captions: item.subtitle = "Meet captions, or Zoom's transcript panel"
+                case .voice: item.subtitle = "Listens to the meeting's sound on this Mac"
+                }
+                submenu.addItem(item)
+            }
+        }
     }
 
     /// Lists the models found on this Mac and on connected drives, with the current one checked.
@@ -259,6 +300,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 mode: mode, near: mouse, sourceApp: sourceApp
             )
         }
+    }
+
+    @objc private func toggleMeeting() {
+        meetingPanel.toggle()
+    }
+
+    @objc private func selectMeetingSource(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String, let source = MeetingSource(rawValue: raw) else { return }
+        MeetingSource.preferred = source
     }
 
     @objc private func unloadModel() {

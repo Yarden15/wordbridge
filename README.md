@@ -6,7 +6,7 @@ that helps you write and understand English while you work — in any app.
 It runs on a **local AI model on your Mac** by default. If you prefer speed over privacy,
 you can switch to **Google Gemini** with your own free API key.
 
-> Status: early development. Translate, Improve and word-by-word work; more is planned.
+> Status: early development. Translate, Improve, word by word and meeting translation work; more is planned.
 
 ## What it does
 
@@ -26,11 +26,36 @@ selecting again.
 
 The window can be resized; it remembers the size you choose.
 
+### Meeting translation
+
+`⌘⇧⌥M` (or **Translate Meeting** in the menu) opens a floating window that translates a Zoom or
+Google Meet call as it happens: each finished sentence shows up with its Hebrew translation
+under it. The text comes from one of two places (switch in the window, or choose a default under
+**Meeting Text From**):
+
+- **Captions** — the meeting's own captions, with speaker names.
+  - *Google Meet* (Chrome, Edge, Brave, Arc): turn on captions (CC).
+  - *Zoom*: open **Captions › View full transcript**. If it's missing, the account owner turns on
+    **Meeting transcript** (and "Allow participants to view transcripts") in the Zoom web settings.
+    Zoom's caption overlay itself can't be read.
+- **Voice** — Wordbridge listens to the sound the meeting app plays (the other people, never your
+  microphone) and transcribes it on your Mac. Hebrew speech works too. Works with any app and needs no captions.
+  Needs macOS 26 and the **System Audio Recording** permission; English speech recognition is
+  downloaded by macOS the first time.
+
+**Automatic** (the default) uses captions when they're on, otherwise voice.
+
+At the top of the window you choose the language people **speak** and the language to
+**translate to** (English and Hebrew for now). In Voice mode, the **Me** button also listens to
+your microphone, so your own sentences show up too (marked "You"); anything already in the
+target language is shown without a translation. With speakers instead of headphones, the
+microphone may pick up the other side as well.
+
 ### Planned
 
 - **Fix as you type** — spelling and grammar underlines in any text field.
 - **Learn while you work** — words you look up are saved for later practice (spaced repetition).
-- **Live captions translation** — translate Zoom / Google Meet captions in real time.
+- **Settings window** — meeting source, languages and more in one place.
 - More languages (Hebrew ⇄ English first).
 
 ## Why
@@ -101,7 +126,9 @@ You can set a different model name in the same dialog.
 ## Privacy
 
 - With a local model, nothing leaves your Mac.
-- With Gemini, the selected text is sent to Google (see above).
+- With Gemini, the selected text is sent to Google (see above). In meeting translation, so is
+  every sentence of the meeting.
+- Meeting audio is transcribed on your Mac and never recorded or saved.
 - Wordbridge reads text only when you press a shortcut. It never reads password fields.
 - Replacing text uses the clipboard briefly; your previous clipboard contents are restored.
 
@@ -109,6 +136,8 @@ You can set a different model name in the same dialog.
 
 - macOS 15 or later, Apple Silicon recommended
 - Accessibility permission
+- For meeting voice recognition: macOS 26 or later, System Audio Recording permission, and
+  Microphone permission for the **Me** button
 
 ## For developers
 
@@ -117,6 +146,9 @@ B=build/Wordbridge.app/Contents/MacOS/Wordbridge
 $B --translate "some text"     # translate and print the result
 $B --check "some text"         # writing check; changed words in [brackets]
 $B --gloss "some text"         # word-by-word meanings
+open build/Wordbridge.app --args --meeting               # open meeting translation
+open build/Wordbridge.app --args --listen 30 /tmp/heard.txt [he] [mic]   # transcribe all sound (or the mic) for 30 s
+open build/Wordbridge.app --args --ax-dump us.zoom.xos /tmp/tree.txt   # dump an app's accessibility tree
 open build/Wordbridge.app --args --improve "some text"   # open the window directly
 ```
 

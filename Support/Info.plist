@@ -20,6 +20,12 @@
     <string>15.0</string>
     <key>LSUIElement</key>
     <true/>
+    <key>NSAudioCaptureUsageDescription</key>
+    <string>Wordbridge listens to your meeting's sound to translate what the other people say. The audio is transcribed on this Mac and never recorded.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>In meeting translation, Wordbridge can also show what you say. Your voice is transcribed on this Mac and never recorded.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Wordbridge turns your meeting's speech into text on this Mac so it can translate it.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
 </dict>
