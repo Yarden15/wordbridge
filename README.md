@@ -14,7 +14,7 @@ Select text in any app, then:
 
 | Shortcut | Tab | What you get |
 |---|---|---|
-| `⌘⇧⌥T` | **Translate** | A translation of the selection. Hebrew → English, anything else → Hebrew. |
+| `⌘⇧⌥T` | **Translate** | A translation of the selection: your language → the one you're learning, anything else → your language. Pick another target language from the menu above the translation. |
 | `⌘⇧⌥F` | **Improve** | Up to two suggestions for text you wrote: a minimal **correction** and a **more natural** version. Changed words are highlighted and a short explanation (in Hebrew) says what changed and why. Press **Return** to replace your text with the first suggestion, **⌘2** for the second. |
 
 Both open the same floating window, so you can switch between Translate and Improve without
@@ -81,10 +81,22 @@ appears next to the text. Click it to see the suggestions and **Replace** the se
 Never in password fields, terminals or code editors. Off by default: with Gemini, the sentences
 you type are sent to Google.
 
+### Languages
+
+English, עברית (Hebrew), العربية (Arabic), Deutsch, Français, Español, Italiano, Português,
+Nederlands, Polski, Русский, Українська, Türkçe, हिन्दी (Hindi), 中文, 日本語 and 한국어.
+
+Set **My language** and **I'm learning** in **Settings › General** (Hebrew and English by default).
+The language of each text is detected automatically. Meanings, explanations and summaries are
+written in your language; "How do I say…" answers in the language you're learning. Meeting
+voice recognition works in all of them (macOS downloads each language the first time).
+
+**My Words** keeps each language apart: the menu at the top of the practice window shows one
+language pair at a time (e.g. *English → עברית*, *Deutsch → עברית*) or all of them.
+
 ### Planned
 
 - **Underlines** for fix as you type, right on the mistaken words.
-- More languages (Hebrew ⇄ English first).
 
 ## Why
 

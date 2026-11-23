@@ -38,7 +38,7 @@ MainActor.assumeIsolated {
                         print("• \(option.text)\n  \(option.note ?? "")")
                     }
                 } else if flag == "--summarize" {
-                    let summary = try await MeetingSummarizer.summarize(transcript: text, in: .hebrew)
+                    let summary = try await MeetingSummarizer.summarize(transcript: text, in: AppLanguage.native)
                     print(summary.asText(title: "Summary"))
                 } else if flag == "--check" {
                     let check = try await WritingAssistant.check(text)

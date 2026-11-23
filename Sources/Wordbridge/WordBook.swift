@@ -14,6 +14,13 @@ struct SavedWord: Codable, Identifiable, Hashable {
     var box = 0
     var due = Date()
     var reviews = 0
+    /// The word's language and its meaning's (missing in words saved by older versions).
+    var termLanguage: AppLanguage?
+    var meaningLanguage: AppLanguage?
+
+    var pair: LanguagePair {
+        LanguagePair(term: termLanguage ?? AppLanguage.detect(term), meaning: meaningLanguage ?? AppLanguage.detect(meaning))
+    }
 }
 
 /// Your personal dictionary, saved as JSON in Application Support.
@@ -32,10 +39,37 @@ final class WordBook: ObservableObject {
         if let data = try? Data(contentsOf: fileURL),
            let words = try? JSONDecoder.iso.decode([SavedWord].self, from: data) {
             self.words = words
+            // Words from before languages were stored: detect them once.
+            if words.contains(where: { $0.termLanguage == nil || $0.meaningLanguage == nil }) {
+                self.words = words.map { word in
+                    var word = word
+                    let pair = word.pair
+                    word.termLanguage = pair.term
+                    word.meaningLanguage = pair.meaning
+                    return word
+                }
+                save()
+            }
         }
     }
 
-    var dueWords: [SavedWord] { words.filter { $0.due <= Date() }.sorted { $0.due < $1.due } }
+    var dueWords: [SavedWord] { dueWords(in: nil) }
+
+    /// Words due for practice, in one language pair (nil: all).
+    func dueWords(in pair: LanguagePair?) -> [SavedWord] {
+        words(in: pair).filter { $0.due <= Date() }.sorted { $0.due < $1.due }
+    }
+
+    func words(in pair: LanguagePair?) -> [SavedWord] {
+        guard let pair else { return words }
+        return words.filter { $0.pair == pair }
+    }
+
+    /// The language pairs you have words in, most words first.
+    var pairs: [LanguagePair] {
+        let counts = Dictionary(grouping: words, by: \.pair).mapValues(\.count)
+        return counts.keys.sorted { counts[$0]! > counts[$1]! }
+    }
 
     func contains(_ term: String) -> Bool {
         let key = Self.key(term)
@@ -45,7 +79,15 @@ final class WordBook: ObservableObject {
     func add(term: String, meaning: String, context: String?) {
         let term = term.trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
         guard !term.isEmpty, !contains(term) else { return }
-        words.append(SavedWord(term: term, meaning: meaning.trimmingCharacters(in: .whitespacesAndNewlines), context: context))
+        let meaning = meaning.trimmingCharacters(in: .whitespacesAndNewlines)
+        var word = SavedWord(term: term, meaning: meaning, context: context)
+        word.termLanguage = AppLanguage.detect(term)
+        // The meaning is in a different language than the word (usually your own).
+        let meaningLanguage = AppLanguage.detect(meaning)
+        word.meaningLanguage = meaningLanguage == word.termLanguage
+            ? (word.termLanguage == AppLanguage.native ? AppLanguage.learning : AppLanguage.native)
+            : meaningLanguage
+        words.append(word)
         save()
         PracticeReminder.enableIfFirstWord()
     }
@@ -194,10 +236,40 @@ final class PracticeModel: ObservableObject {
     @Published var revealed = false
     @Published var search = ""
     @Published private(set) var doneThisSession = 0
+    /// Which language pair to practice and list; nil shows all.
+    @Published var pair: LanguagePair? {
+        didSet {
+            if let pair {
+                UserDefaults.standard.set("\(pair.term.rawValue)>\(pair.meaning.rawValue)", forKey: "practicePair")
+            } else {
+                UserDefaults.standard.set("all", forKey: "practicePair")
+            }
+            next()
+        }
+    }
+
+    init() {
+        pair = Self.savedPair()
+    }
+
+    private static func savedPair() -> LanguagePair? {
+        let book = WordBook.shared
+        let saved = UserDefaults.standard.string(forKey: "practicePair")
+        if saved == "all" { return nil }
+        if let saved {
+            let parts = saved.split(separator: ">").map(String.init)
+            if parts.count == 2, let term = AppLanguage(rawValue: parts[0]), let meaning = AppLanguage(rawValue: parts[1]) {
+                return LanguagePair(term: term, meaning: meaning)
+            }
+        }
+        // Default: the language you're learning, explained in yours (if you have words there).
+        let main = LanguagePair(term: AppLanguage.learning, meaning: AppLanguage.native)
+        return book.pairs.contains(main) || book.pairs.isEmpty ? main : book.pairs.first
+    }
 
     func next() {
         revealed = false
-        current = WordBook.shared.dueWords.first
+        current = WordBook.shared.dueWords(in: pair).first
     }
 
     func answer(_ answer: WordBook.Answer) {
@@ -214,13 +286,16 @@ struct PracticeView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $model.tab) {
-                Text("Practice (\(book.dueWords.count))").tag(PracticeModel.Tab.practice)
-                Text("My Words (\(book.words.count))").tag(PracticeModel.Tab.words)
+            HStack(spacing: 12) {
+                Picker("", selection: $model.tab) {
+                    Text("Practice (\(book.dueWords(in: model.pair).count))").tag(PracticeModel.Tab.practice)
+                    Text("My Words (\(book.words(in: model.pair).count))").tag(PracticeModel.Tab.words)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
+                pairPicker
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .fixedSize()
             .padding(.top, 14)
             .padding(.bottom, 10)
             Divider()
@@ -233,6 +308,22 @@ struct PracticeView: View {
         .environment(\.layoutDirection, .leftToRight)
     }
 
+    /// Keeps each language's words apart: practice and list one pair at a time.
+    private var pairPicker: some View {
+        let pairs = Set(book.pairs).union(model.pair.map { [$0] } ?? [])
+        return Picker("", selection: $model.pair) {
+            Text("All languages (\(book.words.count))").tag(LanguagePair?.none)
+            Divider()
+            ForEach(Array(pairs).sorted { $0.title < $1.title }, id: \.self) { pair in
+                Text("\(pair.title) (\(book.words(in: pair).count))").tag(LanguagePair?.some(pair))
+            }
+        }
+        .labelsHidden()
+        .pickerStyle(.menu)
+        .fixedSize()
+        .help("Show the words of one language")
+    }
+
     // MARK: Practice
 
     @ViewBuilder
@@ -240,6 +331,9 @@ struct PracticeView: View {
         if let word = model.current {
             VStack(spacing: 18) {
                 Spacer(minLength: 10)
+                Text(word.pair.title)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
                 Text(word.term)
                     .font(.system(size: 30, weight: .semibold))
                     .multilineTextAlignment(.center)
@@ -253,7 +347,7 @@ struct PracticeView: View {
                         .frame(maxWidth: 380)
                 }
                 if model.revealed {
-                    DirectionalText(string: word.meaning, language: word.meaning.containsHebrew ? .hebrew : .english)
+                    DirectionalText(string: word.meaning, language: word.pair.meaning)
                         .font(.title2.weight(.medium))
                         .foregroundStyle(Color.accentColor)
                         .multilineTextAlignment(.center)
@@ -275,12 +369,12 @@ struct PracticeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(spacing: 10) {
-                Image(systemName: book.words.isEmpty ? "bookmark" : "checkmark.seal.fill")
+                Image(systemName: book.words(in: model.pair).isEmpty ? "bookmark" : "checkmark.seal.fill")
                     .font(.system(size: 36))
-                    .foregroundStyle(book.words.isEmpty ? Color.secondary : Color.green)
-                Text(book.words.isEmpty ? "No saved words yet" : "All done for now")
+                    .foregroundStyle(book.words(in: model.pair).isEmpty ? Color.secondary : Color.green)
+                Text(book.words(in: model.pair).isEmpty ? "No saved words yet" : "All done for now")
                     .font(.title3.weight(.semibold))
-                Text(book.words.isEmpty
+                Text(book.words(in: model.pair).isEmpty
                      ? "Save words with the bookmark button in word by word, translations and “How do I say…”."
                      : nextReviewText)
                     .font(.callout)
@@ -295,7 +389,7 @@ struct PracticeView: View {
 
     private var nextReviewText: String {
         let reviewed = model.doneThisSession > 0 ? "You reviewed \(model.doneThisSession) words. " : ""
-        guard let next = book.words.map(\.due).min() else { return reviewed }
+        guard let next = book.words(in: model.pair).map(\.due).min() else { return reviewed }
         return reviewed + "Next review " + next.formatted(.relative(presentation: .named)) + "."
     }
 
@@ -321,7 +415,7 @@ struct PracticeView: View {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(word.term).font(.body.weight(.medium))
-                            DirectionalText(string: word.meaning, language: word.meaning.containsHebrew ? .hebrew : .english)
+                            DirectionalText(string: word.meaning, language: word.pair.meaning)
                                 .font(.callout)
                                 .foregroundStyle(.secondary)
                         }
@@ -345,7 +439,7 @@ struct PracticeView: View {
 
     private var filtered: [SavedWord] {
         let query = model.search.trimmingCharacters(in: .whitespaces).lowercased()
-        let sorted = book.words.sorted { $0.added > $1.added }
+        let sorted = book.words(in: model.pair).sorted { $0.added > $1.added }
         guard !query.isEmpty else { return sorted }
         return sorted.filter { $0.term.lowercased().contains(query) || $0.meaning.lowercased().contains(query) }
     }

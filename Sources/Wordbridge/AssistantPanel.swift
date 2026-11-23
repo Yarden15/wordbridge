@@ -100,6 +100,12 @@ final class AssistantModel: GlossStore {
         startTranslation()
     }
 
+    func setTarget(_ language: AppLanguage) {
+        guard language != target, language != source else { return }
+        target = language
+        startTranslation()
+    }
+
     private func startTranslation() {
         translateTask?.cancel()
         translation = nil
@@ -247,15 +253,25 @@ struct AssistantView: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(Color.accentColor)
                 .help("Swap direction")
-                SectionLabel(title: model.target.displayName)
+                Menu {
+                    ForEach(AppLanguage.allCases.filter { $0 != model.source }, id: \.self) { language in
+                        Button(language.displayName) { model.setTarget(language) }
+                    }
+                } label: {
+                    SectionLabel(title: model.target.displayName, systemImage: "chevron.down")
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .help("Translate into another language")
                 Spacer()
                 if let translation = model.translation {
                     if WordTokens.split(model.text).filter(\.isWord).count <= 6 {
-                        // Short selections are worth keeping for practice: English term, Hebrew meaning.
-                        let englishFirst = model.source == .english
+                        // Short selections are worth keeping for practice: the foreign word, meaning in your language.
+                        let foreignFirst = model.source != AppLanguage.native
                         SaveWordButton(
-                            term: englishFirst ? model.text : translation,
-                            meaning: englishFirst ? translation : model.text,
+                            term: foreignFirst ? model.text : translation,
+                            meaning: foreignFirst ? translation : model.text,
                             context: nil)
                     }
                     SmallIconButton(systemImage: "doc.on.doc", help: "Copy the translation") {
@@ -430,8 +446,10 @@ private struct SuggestionCard: View {
             )
 
             if let explanation = suggestion.explanation, !explanation.isBlank {
-                // Explanations are written in Hebrew but quote English words, so any Hebrew means right-to-left.
-                let explanationLanguage: AppLanguage = explanation.containsHebrew ? .hebrew : .english
+                // Explanations are written in your language but quote the text's words.
+                let explanationLanguage: AppLanguage = AppLanguage.native.isRightToLeft && explanation.unicodeScalars.contains {
+                    (0x0590...0x06FF).contains($0.value)
+                } ? AppLanguage.native : AppLanguage.detect(explanation)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Image(systemName: "lightbulb")
                         .font(.caption)

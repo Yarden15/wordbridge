@@ -192,9 +192,9 @@ final class TypingAssistant {
         return (sentence, range)
     }
 
-    /// English, at least a few words, and not huge.
+    /// Not in your own language, at least a few words, and not huge.
     static func worthChecking(_ sentence: String) -> Bool {
-        guard sentence.count <= 600, !sentence.containsHebrew else { return false }
+        guard sentence.count <= 600, AppLanguage.detect(sentence) != AppLanguage.native else { return false }
         let words = sentence.split(whereSeparator: \.isWhitespace).filter { $0.contains(where: \.isLetter) }
         return words.count >= 3 && sentence.unicodeScalars.filter({ CharacterSet.letters.contains($0) }).count >= 10
     }

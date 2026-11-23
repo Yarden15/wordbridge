@@ -41,15 +41,15 @@ final class MeetingSession: ObservableObject {
         var changedAt = Date()
         /// The newest line on screen, which may still be growing.
         var isTail = false
-        var target: AppLanguage = .hebrew
-        /// Already in the language we translate to (e.g. you said something in Hebrew): shown as is.
+        var target: AppLanguage = AppLanguage.native
+        /// Already in the language we translate to (e.g. you said something in your language): shown as is.
         var needsNoTranslation = false
     }
 
     /// The language people speak in the meeting (used for speech recognition).
-    @Published private(set) var spoken: AppLanguage = MeetingSession.saved("meetingSpoken") ?? .english
+    @Published private(set) var spoken: AppLanguage = MeetingSession.saved("meetingSpoken") ?? AppLanguage.learning
     /// The language to translate into.
-    @Published private(set) var target: AppLanguage = MeetingSession.saved("meetingTarget") ?? .hebrew
+    @Published private(set) var target: AppLanguage = MeetingSession.saved("meetingTarget") ?? AppLanguage.native
     /// Also listen to your microphone (voice mode), so your own sentences show up too.
     @Published private(set) var includeMe: Bool = UserDefaults.standard.object(forKey: "meetingIncludeMe") as? Bool ?? true
 
@@ -154,7 +154,7 @@ final class MeetingSession: ObservableObject {
     func setLanguages(spoken: AppLanguage, target: AppLanguage) {
         // Only two languages for now: the other one is always the translation target.
         var target = target
-        if spoken == target { target = AppLanguage.allCases.first { $0 != spoken } ?? target }
+        target = AppLanguage.distinct(spoken, from: target)
         let spokenChanged = spoken != self.spoken
         self.spoken = spoken
         self.target = target
@@ -300,7 +300,8 @@ final class MeetingSession: ObservableObject {
             return
         }
         inFlight.insert(entry.id)
-        let source = AppLanguage.allCases.first { $0 != target } ?? spoken
+        let detected = AppLanguage.detect(entry.original)
+        let source = detected == target ? spoken : detected
         let context = entries[..<index].suffix(3).map(\.original)
         Task {
             let translation = try? await Self.translate(entry.original, context: Array(context), from: source, to: target)
@@ -372,7 +373,7 @@ final class MeetingSummarizer: ObservableObject {
     @Published private(set) var summary: MeetingSummary?
     @Published private(set) var error: String?
     @Published private(set) var loading = false
-    @Published private(set) var language: AppLanguage = .hebrew
+    @Published private(set) var language: AppLanguage = AppLanguage.native
     /// How many lines the current summary covers, to tell when it's out of date.
     @Published private(set) var coveredLines = 0
 
@@ -765,15 +766,29 @@ private struct SummaryView: View {
                 Text("\(session.entries.count - summarizer.coveredLines) new lines since this summary — press Update.")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            section(language == .hebrew ? "סיכום" : "Summary", items: [summary.summary], bullets: false, language: language)
+            section(Self.title("summary", in: language), items: [summary.summary], bullets: false, language: language)
             if let decisions = summary.decisions, !decisions.isEmpty {
-                section(language == .hebrew ? "החלטות" : "Decisions", items: decisions, bullets: true, language: language)
+                section(Self.title("decisions", in: language), items: decisions, bullets: true, language: language)
             }
             if let items = summary.actionItems, !items.isEmpty {
-                section(language == .hebrew ? "משימות" : "Action items",
+                section(Self.title("actions", in: language),
                         items: items.map { $0.task + ($0.owner.map { " — " + $0 } ?? "") }, bullets: true, language: language)
             }
         }
+    }
+
+    /// Section titles in the summary's language (English for the rest).
+    private static func title(_ key: String, in language: AppLanguage) -> String {
+        let titles: [AppLanguage: [String: String]] = [
+            .hebrew: ["summary": "סיכום", "decisions": "החלטות", "actions": "משימות"],
+            .arabic: ["summary": "ملخص", "decisions": "القرارات", "actions": "المهام"],
+            .german: ["summary": "Zusammenfassung", "decisions": "Entscheidungen", "actions": "Aufgaben"],
+            .french: ["summary": "Résumé", "decisions": "Décisions", "actions": "Tâches"],
+            .spanish: ["summary": "Resumen", "decisions": "Decisiones", "actions": "Tareas"],
+            .russian: ["summary": "Итоги", "decisions": "Решения", "actions": "Задачи"],
+        ]
+        let english = ["summary": "Summary", "decisions": "Decisions", "actions": "Action items"]
+        return titles[language]?[key] ?? english[key] ?? key
     }
 
     private func section(_ title: String, items: [String], bullets: Bool, language: AppLanguage) -> some View {

@@ -32,8 +32,10 @@ final class SettingsModel: ObservableObject {
 
     // Meetings
     @Published var meetingSource = MeetingSource.preferred
-    @Published var spoken = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingSpoken") ?? "") ?? .english
-    @Published var target = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingTarget") ?? "") ?? .hebrew
+    @Published var spoken = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingSpoken") ?? "") ?? AppLanguage.learning
+    @Published var target = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingTarget") ?? "") ?? AppLanguage.native
+    @Published var native = AppLanguage.native
+    @Published var learning = AppLanguage.learning
     @Published var includeMe = UserDefaults.standard.object(forKey: "meetingIncludeMe") as? Bool ?? true
 
     func refresh() {
@@ -46,8 +48,10 @@ final class SettingsModel: ObservableObject {
         models = ModelLocator.availableModels
         localModel = ModelLocator.modelURL?.standardizedFileURL
         meetingSource = MeetingSource.preferred
-        spoken = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingSpoken") ?? "") ?? .english
-        target = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingTarget") ?? "") ?? .hebrew
+        spoken = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingSpoken") ?? "") ?? AppLanguage.learning
+        target = AppLanguage(rawValue: UserDefaults.standard.string(forKey: "meetingTarget") ?? "") ?? AppLanguage.native
+        native = AppLanguage.native
+        learning = AppLanguage.learning
         includeMe = UserDefaults.standard.object(forKey: "meetingIncludeMe") as? Bool ?? true
     }
 
@@ -61,6 +65,18 @@ final class SettingsModel: ObservableObject {
             launchError = error.localizedDescription
         }
         launchAtLogin = SMAppService.mainApp.status == .enabled
+    }
+
+    /// Your language and the one you're learning; changing one to equal the other swaps them.
+    func setMyLanguages(native: AppLanguage, learning: AppLanguage) {
+        var native = native, learning = learning
+        if native == learning {
+            if native == self.native { native = self.learning } else { learning = self.native }
+        }
+        AppLanguage.native = native
+        AppLanguage.learning = learning
+        self.native = native
+        self.learning = learning
     }
 
     func setCheckWhileTyping(_ on: Bool) {
@@ -128,7 +144,7 @@ final class SettingsModel: ObservableObject {
 
     func setLanguages(spoken: AppLanguage, target: AppLanguage) {
         var target = target
-        if spoken == target { target = AppLanguage.allCases.first { $0 != spoken } ?? target }
+        target = AppLanguage.distinct(spoken, from: target)
         self.spoken = spoken
         self.target = target
         UserDefaults.standard.set(spoken.rawValue, forKey: "meetingSpoken")
@@ -179,11 +195,27 @@ struct SettingsView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Section {
+                Picker("My language", selection: Binding(
+                    get: { model.native }, set: { model.setMyLanguages(native: $0, learning: model.learning) })) {
+                    ForEach(AppLanguage.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+                Picker("I'm learning", selection: Binding(
+                    get: { model.learning }, set: { model.setMyLanguages(native: model.native, learning: $0) })) {
+                    ForEach(AppLanguage.allCases, id: \.self) { Text($0.displayName).tag($0) }
+                }
+            } header: {
+                Text("Languages")
+            } footer: {
+                Text("Selected text in your language is translated into the language you're learning; anything else into your language. Meanings, explanations and summaries are written in your language.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section {
                 Toggle("Check my writing as I type", isOn: Binding(get: { model.checkWhileTyping }, set: { model.setCheckWhileTyping($0) }))
             } header: {
                 Text("Writing")
             } footer: {
-                Text("When you pause after an English sentence in any app, Wordbridge checks it and shows a small badge if something should be fixed. Never in password fields, terminals or code editors. With Gemini, the sentences you type are sent to Google.")
+                Text("When you pause after a sentence in the language you're learning, in any app, Wordbridge checks it and shows a small badge if something should be fixed. Never in password fields, terminals or code editors. With Gemini, the sentences you type are sent to Google.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

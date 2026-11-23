@@ -76,6 +76,15 @@ returns, per word, its meaning in context plus the idiom or phrasal verb it belo
 Results are cached per text. Hover state lives in its own `WordFocus` object so moving the mouse
 doesn't re-render or re-measure the whole window.
 
+**Languages.** `AppLanguage` lists 17 languages (code, prompt name, native name, speech locale,
+direction). Two settings drive everything: *my language* and *the language I'm learning*.
+`AppLanguage.detect` uses `NLLanguageRecognizer` limited to the supported languages, with hints
+towards those two so short text isn't misread; text in your language goes to the learning one,
+anything else to yours. Prompts name the languages explicitly. Speech recognition picks
+`SpeechTranscriber` when it supports the locale, otherwise `DictationTranscriber` (Hebrew, Arabic,
+Dutch, Polish, Russian, Ukrainian, Turkish on macOS 27). Saved words store the language of the word
+and of its meaning; older words get them detected once on load.
+
 **Mixed Hebrew/English text.** macOS picks a paragraph's direction from its first letter, so Hebrew
 that starts with an English word gets scrambled. Each paragraph is prefixed with an invisible
 RLM/LRM mark for its language.
