@@ -1,7 +1,8 @@
 # Wordbridge
 
 **Wordbridge** is a free, open-source macOS menu-bar app
-that helps you write and understand English while you work — in any app.
+that helps you write and understand another language while you work — in any app.
+Made for Hebrew speakers learning English, it works with 17 languages.
 
 It runs on a **local AI model on your Mac** by default. If you prefer speed over privacy,
 you can switch to **Google Gemini** with your own free API key.
