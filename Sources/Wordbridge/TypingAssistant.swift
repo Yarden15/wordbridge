@@ -29,6 +29,14 @@ final class TypingAssistant {
     private var cache: [String: WritingCheck] = [:]
     private var preparedApps = Set<pid_t>()
     private let badge = TypingBadge()
+    /// When each recent check was sent, to stay under `checksPerMinute`.
+    private var recentChecks: [Date] = []
+
+    /// How long you have to stop typing before the sentence is checked.
+    static let pause: TimeInterval = 5
+    /// At most this many checks a minute, so typing doesn't use up Gemini's free per-minute
+    /// limit and leave nothing for the things you ask for yourself.
+    static let checksPerMinute = 4
 
     private static let excludedApps: [String] = [
         "io.github.wordbridge", "com.apple.Terminal", "com.googlecode.iterm2", "dev.warp.Warp-Stable",
@@ -82,7 +90,7 @@ final class TypingAssistant {
             if badge.isVisible, !value.contains(badge.sentence) { badge.hide() }
             return
         }
-        if checkedValue != value, Date().timeIntervalSince(lastChange) > 1.3 {
+        if checkedValue != value, Date().timeIntervalSince(lastChange) > Self.pause {
             checkedValue = value
             check(value, in: field, app: app)
         }
@@ -129,6 +137,13 @@ final class TypingAssistant {
             show(cached, sentence: sentence, range: range, in: field, app: app)
             return
         }
+        let now = Date()
+        recentChecks.removeAll { now.timeIntervalSince($0) > 60 }
+        guard recentChecks.count < Self.checksPerMinute else {
+            checkedValue = nil // try again on a later pause, once the minute has passed
+            return
+        }
+        recentChecks.append(now)
         checkTask?.cancel()
         checkTask = Task {
             guard let result = try? await WritingAssistant.check(sentence), !Task.isCancelled else { return }

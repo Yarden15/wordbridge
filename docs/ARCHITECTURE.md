@@ -115,9 +115,9 @@ by speaker and shared prefix for Meet.
 
 **Fix as you type.** A 0.6 s timer reads the focused element (system-wide `AXFocusedUIElement`):
 text areas and fields only, never `AXSecureTextField`, and not in terminals, code editors or
-password managers. When the value hasn't changed for 1.3 s, the sentence around the caret
+password managers. When the value hasn't changed for 5 s, the sentence around the caret
 (`enumerateSubstrings(.bySentences)`, UTF-16 offsets like Accessibility) is checked if it's English
-and at least three words; results are cached per sentence. Only real mistakes (`ok == false`)
+and at least three words; results are cached per sentence, and at most 4 checks are sent a minute (Gemini free-tier limit). Only real mistakes (`ok == false`)
 show the badge, placed with `AXBoundsForRange` when the app supports it, else at the field's corner.
 Clicking selects the sentence (`AXSelectedTextRange`) so **Replace** pastes over exactly it.
 Chromium/Electron apps get `AXManualAccessibility` so their fields expose text.

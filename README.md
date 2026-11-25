@@ -77,7 +77,8 @@ brings you back. Words are stored in `~/Library/Application Support/Wordbridge/w
 ### Fix as you type
 
 Turn on **Settings › General › Check my writing as I type**. When you pause after an English
-sentence in any app, Wordbridge checks it; if something should be fixed, a small orange badge
+sentence in any app (5 seconds without typing), Wordbridge checks it — at most 4 times a minute, so
+it doesn't use up Gemini's free limit; if something should be fixed, a small orange badge
 appears next to the text. Click it to see the suggestions and **Replace** the sentence.
 Never in password fields, terminals or code editors. Off by default: with Gemini, the sentences
 you type are sent to Google.
